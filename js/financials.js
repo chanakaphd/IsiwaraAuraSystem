@@ -15,17 +15,16 @@ async function fetchAndRenderFinancialLedgersView() {
     try {
         const res = await fetchAirtableTableRecords('Financial%20Ledgers?sort[0][field]=Transaction%20Timestamp&sort[0][direction]=desc');
         
-        tbody.innerHTML = (res || []).map(record => {
-            const f = record.fields;
-            // Establish if record falls within an automated historical day-end freeze partition
-            
+       tbody.innerHTML = (res || []).map(record => {
+    try {
+        const f = record.fields || {};
 
-const settlementType = String(f['Settlement Type'] || '');
-const ledgerId = String(f['Ledger ID'] || '');
+        const settlementType = String(f['Settlement Type'] || '');
+        const ledgerId = String(f['Ledger ID'] || '');
 
-const isLocked =
-    settlementType.includes('LOCKED_ARCHIVED') ||
-    ledgerId.startsWith('LCK-');
+        const isLocked =
+            settlementType.includes('LOCKED_ARCHIVED') ||
+            ledgerId.startsWith('LCK-');
             
             return `
                 <tr class="animate-fade-in">
