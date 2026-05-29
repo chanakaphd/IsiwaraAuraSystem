@@ -46,11 +46,16 @@ async function handleSecurityAuthenticationSubmission(event) {
     }
     if (errorNode) errorNode.style.display = 'none';
 
-    // 1. Evaluate credentials against the synchronized Airtable Users data cache
     let accessGranted = false;
     let assignedUserRole = 'Front Office';
 
-    if (typeof cacheUsersPool !== 'undefined' && cacheUsersPool.length > 0) {
+    // FIRST PRIORITY: Check local emergency administrator fallback bypass instantly
+    if (enteredUser === 'admin' && enteredPass === 'admin') {
+        accessGranted = true;
+        assignedUserRole = 'Administrator';
+    } 
+    // SECOND PRIORITY: If not admin/admin, attempt online sync
+    else if (typeof cacheUsersPool !== 'undefined' && cacheUsersPool.length > 0) {
         const matchedRecord = cacheUsersPool.find(u => 
             u.fields.Username === enteredUser && u.fields.Password === enteredPass
         );
@@ -58,12 +63,6 @@ async function handleSecurityAuthenticationSubmission(event) {
             accessGranted = true;
             assignedUserRole = matchedRecord.fields.Role || 'Front Office';
         }
-    }
-
-    // 2. Fallback Root Developer Override Option to bypass system configuration drops
-    if (!accessGranted && enteredUser === 'admin' && enteredPass === 'admin') {
-        accessGranted = true;
-        assignedUserRole = 'Administrator';
     }
 
     // 3. Evaluate Authorization State Outcome Paths
@@ -83,7 +82,6 @@ async function handleSecurityAuthenticationSubmission(event) {
         }
     }
 }
-
 /**
  * Spawns core telemetry trackers, timers, and view renders after successful gate pass
  */
