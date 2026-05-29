@@ -6,20 +6,30 @@
  * Isiwara Aura - Core Global Memory States Cache
  */
 
-// Core Security Bearer and Base Storage Key Handshakes
+// Dynamically fetch active tokens straight from device cache storage keys
 var AIRTABLE_API_KEY = localStorage.getItem('AIRTABLE_API_KEY') || '';
 var BASE_ID = localStorage.getItem('BASE_ID') || '';
 
 // Live Progress Background Timers Memory Slots Registry
 var localLiveTimerQueueDatabase = [];
 
-// Volatile Application Metadata Synchronization Cache Matrices (UPDATED TO VAR)
+// Volatile Application Metadata Synchronization Cache Matrices
 var cacheRooms = [];
 var cacheTreatments = [];
 var cacheTherapists = [];
 var cacheIntroducers = [];
 var cacheRoles = [];
 var globalCountriesList = [];
+
+/**
+ * Global Initialization Bootstrap Verification Utility
+ * Re-reads local storage data parameters to ensure active data pipelines are fresh
+ */
+function updateInjectedSystemCredentialTokens() {
+    AIRTABLE_API_KEY = localStorage.getItem('AIRTABLE_API_KEY') || '';
+    BASE_ID = localStorage.getItem('BASE_ID') || '';
+    console.log("🔑 Memory Sync: Core endpoint tokens refreshed inside execution runtime context.");
+}
 
 // Active Operation Target Index Tracker for Completion Overlays Interventions
 let currentInterventionNodeIndex = null;
