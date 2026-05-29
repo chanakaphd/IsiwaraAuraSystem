@@ -1,0 +1,204 @@
+/* Custom CSS Variables Baseline Configurations Matrix */
+:root { 
+    --primary-green: #1b5e20; 
+    --light-green-bg: #f4f7f4;
+    --accent-gold: #b28704; 
+    --dark-charcoal: #2b2d2f;
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+body { 
+    background-color: #f8f9fa; 
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+    color: var(--dark-charcoal); 
+}
+
+/* Premium Navigation Sidebar Setup */
+.sidebar { 
+    background: linear-gradient(135deg, var(--primary-green) 0%, #0d3c11 100%); 
+    min-height: 100vh; 
+    color: white; 
+    padding: 25px 20px; 
+    position: fixed; 
+    width: 16.666667%; 
+    z-index: 100; 
+    box-shadow: 4px 0 15px rgba(0,0,0,0.1); 
+}
+
+.sidebar h4 { 
+    font-size: 1.25rem; 
+    font-weight: 700; 
+    letter-spacing: 1.5px; 
+    border-bottom: 1px solid rgba(255,255,255,0.15); 
+    padding-bottom: 15px; 
+    margin-bottom: 25px; 
+    color: #fff; 
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+    text-align: center; 
+}
+
+.main-content { 
+    margin-left: 16.666667%; 
+    padding: 40px; 
+}
+
+/* Sidebar Links Stylings */
+.nav-link { 
+    color: rgba(255,255,255,0.75); 
+    margin: 8px 0; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    text-decoration: none; 
+    display: block; 
+    padding: 12px 15px; 
+    font-weight: 500; 
+    transition: all 0.25s ease; 
+}
+
+.nav-link:hover { 
+    background: rgba(255,255,255,0.1); 
+    color: #fff; 
+    transform: translateX(4px); 
+}
+
+.nav-link.active { 
+    background: var(--accent-gold); 
+    color: white; 
+    font-weight: 600; 
+    box-shadow: 0 4px 12px rgba(178,135,4,0.3); 
+}
+
+/* Polished Dashboard Component Blocks and Data Tables */
+.card { 
+    border: none; 
+    border-radius: 12px; 
+    box-shadow: var(--card-shadow); 
+    background-color: #ffffff; 
+    transition: transform 0.2s ease; 
+    margin-bottom: 24px; 
+}
+
+.table-light th { 
+    background-color: #f1f5f1; 
+    color: var(--primary-green); 
+    font-weight: 600; 
+    text-transform: uppercase; 
+    font-size: 0.8rem; 
+    letter-spacing: 0.5px; 
+}
+
+/* Premium Buttons Styling Layouts */
+.btn-copper { 
+    background: linear-gradient(135deg, var(--accent-gold) 0%, #8c6a03 100%); 
+    color: white; 
+    border: none; 
+    font-weight: 600; 
+    border-radius: 8px; 
+    padding: 10px 20px; 
+    transition: all 0.2s ease; 
+}
+
+.btn-copper:hover { 
+    transform: translateY(-1px); 
+    box-shadow: 0 4px 12px rgba(178,135,4,0.4); 
+    color: white; 
+}
+
+.btn-success {
+    background-color: var(--primary-green) !important;
+    border-color: var(--primary-green) !important;
+}
+
+.btn-success:hover {
+    background-color: #113f15 !important;
+    border-color: #113f15 !important;
+}
+
+/* Animation Transformations Layouts */
+.animate-fade-in { 
+    animation: fadeInFrame 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+}
+
+@keyframes fadeInFrame { 
+    from { opacity: 0; transform: translateY(12px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+/* Live Operational Timers Badge Blocks */
+.timer-badge { 
+    font-family: monospace; 
+    font-size: 1.25rem; 
+    font-weight: bold; 
+    padding: 6px 12px; 
+    border-radius: 6px; 
+    letter-spacing: 1px; 
+}
+
+/* Custom Overlays Notification Boxes Styling */
+.swal-backdrop { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100vh; 
+    background: rgba(0,0,0,0.5); 
+    z-index: 2000; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    opacity: 0; 
+    pointer-events: none; 
+    transition: opacity 0.3s ease; 
+}
+
+.swal-backdrop.show { 
+    opacity: 1; 
+    pointer-events: auto; 
+}
+
+.swal-card { 
+    background: white; 
+    width: 420px; 
+    border-radius: 16px; 
+    padding: 30px; 
+    text-align: center; 
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2); 
+    transform: scale(0.8); 
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+}
+
+.swal-backdrop.show .swal-card { 
+    transform: scale(1); 
+}
+
+.swal-btn { 
+    background: var(--primary-green); 
+    color: white; 
+    border: none; 
+    padding: 8px 30px; 
+    font-weight: 600; 
+    border-radius: 6px; 
+    cursor: pointer; 
+}
+
+/* Authentication Gate Layout Definitions */
+#login-overlay { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: linear-gradient(135deg, var(--primary-green) 0%, #0a300d 100%); 
+    z-index: 1050; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+}
+
+/* High-Definition Media Print Layout Overrides */
+@media print {
+    body { background-color: #ffffff !important; color: #000000 !important; font-size: 11pt !important; }
+    .sidebar, .no-print, header, .btn, #login-overlay, .swal-backdrop { display: none !important; }
+    .main-content { margin-left: 0 !important; padding: 0 !important; width: 100% !important; }
+    .card { border: 1px solid #dee2e6 !important; box-shadow: none !important; margin-bottom: 15px !important; }
+}
