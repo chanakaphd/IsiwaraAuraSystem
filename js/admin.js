@@ -43,19 +43,23 @@ async function showAdminSubTab(subTab) {
             </tr>
         `).join('') || '<tr><td colspan="3" class="text-center text-muted py-2">No treatments synced from database.</td></tr>';
         
-        document.getElementById('treatmentForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const fields = { 
-                "Treatment Name": document.getElementById('newTreatmentName').value.trim(), 
-                "Price": parseFloat(document.getElementById('newTreatmentPrice').value), 
-                "Duration in Minutes": parseInt(document.getElementById('newTreatmentDuration').value) 
+        // Safety Wrapper bound element check to prevent startup execution freeze context drops
+        const treatmentForm = document.getElementById('treatmentForm');
+        if (treatmentForm) {
+            treatmentForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const fields = { 
+                    "Treatment Name": document.getElementById('newTreatmentName').value.trim(), 
+                    "Price": parseFloat(document.getElementById('newTreatmentPrice').value), 
+                    "Duration in Minutes": parseInt(document.getElementById('newTreatmentDuration').value, 10) 
+                };
+                await dispatchPostRESTRequestHandshake('Treatments', fields); 
+                safeCloseModal('addTreatmentModal'); 
+                await synchronizeLocalMetadataCachePools(); 
+                showAdminSubTab('treatments');
+                treatmentForm.reset();
             };
-            await dispatchPostRESTRequestHandshake('Treatments', fields); 
-            safeCloseModal('addTreatmentModal'); 
-            await synchronizeLocalMetadataCachePools(); 
-            showAdminSubTab('treatments');
-            document.getElementById('treatmentForm').reset();
-        };
+        }
     } 
     
     // ----------------------------------------------------
@@ -84,19 +88,22 @@ async function showAdminSubTab(subTab) {
             </tr>
         `).join('') || '<tr><td colspan="3" class="text-center text-muted py-2">No therapist roster lines recorded.</td></tr>';
         
-        document.getElementById('therapistForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const fields = { 
-                "Name": document.getElementById('newTherapistName').value.trim(), 
-                "Specialty": document.getElementById('newTherapistSpecialty').value.trim(), 
-                "Availability Status": "Available" 
+        const therapistForm = document.getElementById('therapistForm');
+        if (therapistForm) {
+            therapistForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const fields = { 
+                    "Name": document.getElementById('newTherapistName').value.trim(), 
+                    "Specialty": document.getElementById('newTherapistSpecialty').value.trim(), 
+                    "Availability Status": "Available" 
+                };
+                await dispatchPostRESTRequestHandshake('Therapists', fields); 
+                safeCloseModal('addTherapistModal'); 
+                await synchronizeLocalMetadataCachePools(); 
+                showAdminSubTab('therapists');
+                therapistForm.reset();
             };
-            await dispatchPostRESTRequestHandshake('Therapists', fields); 
-            safeCloseModal('addTherapistModal'); 
-            await synchronizeLocalMetadataCachePools(); 
-            showAdminSubTab('therapists');
-            document.getElementById('therapistForm').reset();
-        };
+        }
     }
     
     // ----------------------------------------------------
@@ -116,7 +123,6 @@ async function showAdminSubTab(subTab) {
             </div>
         `;
         
-        // Dynamically parse live roles table data array straight down into the selection dropdown modal element
         const roleDropdownSelect = document.getElementById('newUserRoleSelect');
         if (roleDropdownSelect) {
             roleDropdownSelect.innerHTML = cacheRoles.map(r => 
@@ -127,7 +133,7 @@ async function showAdminSubTab(subTab) {
         const listBody = document.getElementById('lbl-admin-user-list');
         listBody.innerHTML = `<tr><td colspan="4" class="text-center font-monospace small">Fetching cloud security parameters registries...</td></tr>`;
 
-        if (AIRTABLE_API_KEY) {
+        if (typeof AIRTABLE_API_KEY !== 'undefined' && AIRTABLE_API_KEY) {
             try {
                 const res = await fetchAirtableTableRecords('Users');
                 listBody.innerHTML = (res || []).map(u => `
@@ -141,23 +147,26 @@ async function showAdminSubTab(subTab) {
             } catch(e) { listBody.innerHTML = `<tr><td colspan="4" class="text-danger text-center">Failed to sync security table rows.</td></tr>`; }
         }
         
-        document.getElementById('userForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const fields = { 
-                "Username": document.getElementById('newUserName').value.trim(), 
-                "Password": document.getElementById('newUserPass').value.trim(), 
-                "Full Name": document.getElementById('newUserFullName').value.trim(), 
-                "Calling Name": document.getElementById('newUserCallingName').value.trim(), 
-                "NIC": document.getElementById('newUserNIC').value.trim(), 
-                "Role": document.getElementById('newUserRoleSelect').value, 
-                "Status": "Active" 
+        const userForm = document.getElementById('userForm');
+        if (userForm) {
+            userForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const fields = { 
+                    "Username": document.getElementById('newUserName').value.trim(), 
+                    "Password": document.getElementById('newUserPass').value.trim(), 
+                    "Full Name": document.getElementById('newUserFullName').value.trim(), 
+                    "Calling Name": document.getElementById('newUserCallingName').value.trim(), 
+                    "NIC": document.getElementById('newUserNIC').value.trim(), 
+                    "Role": document.getElementById('newUserRoleSelect').value, 
+                    "Status": "Active" 
+                };
+                await dispatchPostRESTRequestHandshake('Users', fields); 
+                safeCloseModal('addUserModal'); 
+                await synchronizeLocalMetadataCachePools();
+                showAdminSubTab('users');
+                userForm.reset();
             };
-            await dispatchPostRESTRequestHandshake('Users', fields); 
-            safeCloseModal('addUserModal'); 
-            await synchronizeLocalMetadataCachePools();
-            showAdminSubTab('users');
-            document.getElementById('userForm').reset();
-        };
+        }
     }
     
     // ----------------------------------------------------
@@ -186,19 +195,22 @@ async function showAdminSubTab(subTab) {
             </tr>
         `).join('') || '<tr><td colspan="3" class="text-center text-muted py-2">No physical spaces initialized.</td></tr>';
         
-        document.getElementById('roomForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const fields = { 
-                "Room Number": document.getElementById('newRoomNumber').value.trim(), 
-                "Beds Count": parseInt(document.getElementById('newRoomBeds').value, 10), 
-                "Room Type": document.getElementById('newRoomType').value 
+        const roomForm = document.getElementById('roomForm');
+        if (roomForm) {
+            roomForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const fields = { 
+                    "Room Number": document.getElementById('newRoomNumber').value.trim(), 
+                    "Beds Count": parseInt(document.getElementById('newRoomBeds').value, 10), 
+                    "Room Type": document.getElementById('newRoomType').value 
+                };
+                await dispatchPostRESTRequestHandshake('Rooms', fields); 
+                safeCloseModal('addRoomModal'); 
+                await synchronizeLocalMetadataCachePools(); 
+                showAdminSubTab('rooms');
+                roomForm.reset();
             };
-            await dispatchPostRESTRequestHandshake('Rooms', fields); 
-            safeCloseModal('addRoomModal'); 
-            await synchronizeLocalMetadataCachePools(); 
-            showAdminSubTab('rooms');
-            document.getElementById('roomForm').reset();
-        };
+        }
     }
     
     // ----------------------------------------------------
@@ -228,20 +240,23 @@ async function showAdminSubTab(subTab) {
             </tr>
         `).join('') || '<tr><td colspan="4" class="text-center text-muted py-2">No commission partner vectors logged.</td></tr>';
         
-        document.getElementById('introForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const fields = { 
-                "Full Name": document.getElementById('adminIntroFullName').value.trim(), 
-                "Calling Name": document.getElementById('adminIntroFullName').value.trim().split(' ')[0], 
-                "NIC Number": document.getElementById('adminIntroNIC').value.trim(), 
-                "Address": document.getElementById('adminIntroAddress').value.trim() 
+        const introForm = document.getElementById('introForm');
+        if (introForm) {
+            introForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const fields = { 
+                    "Full Name": document.getElementById('adminIntroFullName').value.trim(), 
+                    "Calling Name": document.getElementById('adminIntroFullName').value.trim().split(' ')[0], 
+                    "NIC Number": document.getElementById('adminIntroNIC').value.trim(), 
+                    "Address": document.getElementById('adminIntroAddress').value.trim() 
+                };
+                await dispatchPostRESTRequestHandshake('Introducers', fields); 
+                safeCloseModal('addIntroModal'); 
+                await synchronizeLocalMetadataCachePools(); 
+                showAdminSubTab('introducers');
+                introForm.reset();
             };
-            await dispatchPostRESTRequestHandshake('Introducers', fields); 
-            safeCloseModal('addIntroModal'); 
-            await synchronizeLocalMetadataCachePools(); 
-            showAdminSubTab('introducers');
-            document.getElementById('introForm').reset();
-        };
+        }
     }
     
     // ----------------------------------------------------
@@ -264,11 +279,14 @@ async function showAdminSubTab(subTab) {
     // SUB-TAB MODULE WRAPPER: DYNAMIC API CO-METADATA PROFILE PARAMETERS
     // ----------------------------------------------------
     else if (subTab === 'system') {
+        const currentApiKey = (typeof AIRTABLE_API_KEY !== 'undefined') ? AIRTABLE_API_KEY : '';
+        const currentBaseId = (typeof BASE_ID !== 'undefined') ? BASE_ID : '';
+        
         content.innerHTML = `
             <h5 class="fw-bold text-success mb-1">System Core Parameter Handshake Endpoints</h5>
             <p class="text-muted small">Configurations saved locally inside browser cache arrays to drive silent background REST queries loops.</p><hr>
-            <div class="mb-2"><label class="small fw-bold text-muted">Bearer Token Secret Key Reference</label><input type="password" id="sysApiKeyEdit" class="form-control form-control-sm" value="${AIRTABLE_API_KEY}"></div>
-            <div class="mb-3"><label class="small fw-bold text-muted">Airtable Base Identifier ID Reference</label><input type="text" id="sysBaseIdEdit" class="form-control form-control-sm" value="${BASE_ID}"></div>
+            <div class="mb-2"><label class="small fw-bold text-muted">Bearer Token Secret Key Reference</label><input type="password" id="sysApiKeyEdit" class="form-control form-control-sm" value="${currentApiKey}"></div>
+            <div class="mb-3"><label class="small fw-bold text-muted">Airtable Base Identifier ID Reference</label><input type="text" id="sysBaseIdEdit" class="form-control form-control-sm" value="${currentBaseId}"></div>
             <hr>
             <h6 class="fw-bold text-success mb-2">Extended Corporate Document Branding Settings</h6>
             <div class="mb-2"><label class="small fw-bold text-muted">Company Legal Trade Name</label><input type="text" id="cfgCoName" class="form-control form-control-sm" value="${localStorage.getItem('co_name_override') || 'Isiwara Aura'}"></div>
