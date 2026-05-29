@@ -83,27 +83,32 @@ async function handleSecurityAuthenticationSubmission(event) {
     }
 }
 /**
- * Spawns core telemetry trackers, timers, and view renders after successful gate pass
+ * Post-Login Operational Sequence Coordinator
+ * Dispatches synchronization requests and reveals the active schedule dashboard view panel layout layers
  */
-function executePostLoginInitializationSequence() {
-    // Start automated backend caching loops if available
+async function executePostLoginInitializationSequence() {
+    console.log("🔒 Authentication verified successfully. Initializing system dashboard context variables...");
+
+    // 1. Instantly trigger background synchronization for metadata arrays caches
     if (typeof synchronizeLocalMetadataCachePools === 'function') {
-        synchronizeLocalMetadataCachePools().then(() => {
-            // Default workspace routing after loading data
-            if (typeof showTab === 'function') showTab('bookings');
-        });
-    } else {
-        if (typeof showTab === 'function') showTab('bookings');
+        await synchronizeLocalMetadataCachePools();
     }
 
-    // Engage user idle loop event listening matrices
-    resetSessionIdleCountdownTracker();
-    const userActivityEvents = ['mousemove', 'keypress', 'mousedown', 'touchstart'];
-    userActivityEvents.forEach(eventType => {
-        window.addEventListener(eventType, resetSessionIdleCountdownTracker);
-    });
-}
+    // 2. Clear out any residual boot display blockers
+    const loginOverlay = document.getElementById('login-overlay');
+    if (loginOverlay) {
+        loginOverlay.style.display = 'none';
+    }
 
+    // 3. Router redirect: Fire the default workspace viewport layout (The Master Schedule Grid)
+    if (typeof showTab === 'function') {
+        showTab('bookings');
+    } else {
+        // Fallback layout activation mechanism if config workspace router drops
+        const bookingsPane = document.getElementById('bookings-view');
+        if (bookingsPane) bookingsPane.style.display = 'block';
+    }
+}
 /**
  * Resets the 20-minute security activity tracker countdown back to base thresholds
  */
