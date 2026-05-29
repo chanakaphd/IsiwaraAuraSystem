@@ -83,6 +83,7 @@ async function handleSecurityAuthenticationSubmission(event) {
     }
 }
 /**
+ /**
  * Post-Login Operational Sequence Coordinator
  * Dispatches synchronization requests and reveals the active schedule dashboard view panel layout layers
  */
@@ -94,7 +95,7 @@ async function executePostLoginInitializationSequence() {
         await synchronizeLocalMetadataCachePools();
     }
 
-    // 2. Clear out any residual boot display blockers
+    // 2. Clear out the login display blocker
     const loginOverlay = document.getElementById('login-overlay');
     if (loginOverlay) {
         loginOverlay.style.display = 'none';
