@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isiwara Aura | Enterprise Management Architecture</title>
+    <!-- Bootstrap 5.3.0 CSS Framework -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Decoupled Custom Premium Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- Global Feedback System Custom Notification Modal -->
+    <div id="custom-swal-container" class="swal-backdrop" onclick="dismissCustomSwalPopup()">
+        <div class="swal-card" onclick="event.stopPropagation()">
+            <div class="swal-title h5 fw-bold text-success" id="swal-injected-title">Notification</div>
+            <div class="swal-text my-3 text-muted" id="swal-injected-msg">Database sync request completed safely.</div>
+            <button class="swal-btn" onclick="dismissCustomSwalPopup()">Acknowledge</button>
+        </div>
+    </div>
+
+    <!-- Treatment Completed Operational Intervention Modal Dialog Box -->
+    <div id="treatment-completion-modal-backdrop" class="swal-backdrop">
+        <div class="swal-card text-start" style="width: 500px;" onclick="event.stopPropagation()">
+            <div class="d-flex align-items-center mb-3 text-success">
+                <span class="fs-3 me-2">🔔</span>
+                <h5 class="fw-bold mb-0">Treatment Session Completed</h5>
+            </div>
+            <div class="mb-3 bg-light p-3 rounded small">
+                <div class="mb-1">Guest Profile: <strong id="lblCompGuestName">N/A</strong></div>
+                <div class="mb-1">Room Base Allocation: <strong id="lblCompRoomLabel">N/A</strong></div>
+                <div>Therapist Linked Assignment: <strong id="lblCompTherapistLabel">N/A</strong></div>
+            </div>
+            
+            <div class="form-check mb-4 bg-light p-3 rounded border border-dashed border-success">
+                <input class="form-check-input ms-0 me-2" type="checkbox" id="chkUnlockResourcesOverride" checked>
+                <label class="form-check-label small fw-bold text-success" for="chkUnlockResourcesOverride">
+                    Unlock Room and Specialist Therapist effective immediately? (Makes resources available for subsequent bulk intakes)
+                </label>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 justify-content-end">
+                <button class="btn btn-sm btn-outline-secondary" id="btnCompWait10">Wait 10 Mins</button>
+                <button class="btn btn-sm btn-danger" id="btnCompCancel">Finalize & Exit Flow</button>
+                <button class="btn btn-sm btn-success fw-bold" id="btnCompConfirm">Confirm & Process Steam</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Gate Overlay Layout Mask -->
+    <div id="login-overlay">
+        <div class="card shadow-lg p-4 border-0 animate-fade-in" style="width: 380px; border-radius: 16px;">
+            <div class="text-center mb-4">
+                <h4 class="text-success fw-bold tracking-1 mb-1" style="color: var(--primary-green) !important;">ISIWARA AURA</h4>
+                <p class="text-muted small">Boutique Executive Management Portal</p>
+            </div>
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Username Reference</label>
+                    <input type="text" id="loginUser" class="form-control" style="border-radius: 8px;" value="admin" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Password Key</label>
+                    <input type="password" id="loginPass" class="form-control" style="border-radius: 8px;" value="admin" required>
+                </div>
+                <button type="submit" class="btn btn-success w-100 fw-bold py-2 mb-2" style="border-radius: 8px; background: var(--primary-green);">Authenticate Terminal Connection</button>
+                <div id="loginError" class="text-danger small mt-2 text-center" style="display:none; font-weight: 500;">Access Denied: Malformed user authentication array data.</div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Dashboard Layout Grid Framework -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar Navigation Rails -->
+            <nav class="col-md-2 d-none d-md-block sidebar">
+                <h4>ISIWARA AURA</h4>
+                <div class="nav flex-column">
+                    <a class="nav-link active" id="nav-bookings" onclick="showTab('bookings')">📋 Master Schedule</a>
+                    <a class="nav-link" id="nav-manage" onclick="showTab('manage')">⏱️ Manage Flow Live</a>
+                    <a class="nav-link" id="nav-commissions" onclick="showTab('commissions')">🤝 Commission Board</a>
+                    <a class="nav-link" id="nav-financials" onclick="showTab('financials')">💳 Financial Ledgers</a>
+                    <a class="nav-link" id="nav-guests" onclick="showTab('guests')">👥 Guest Registry</a>
+                    <a class="nav-link" id="nav-reports" onclick="showTab('reports')">📊 Report Hub</a>
+                    <a class="nav-link" id="nav-admin" onclick="showTab('admin')">⚙️ Admin Panel</a>
+                </div>
+            </nav>
+
+            <!-- Main Context Content Container -->
+            <main class="col-md-10 main-content">
+                <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                    <h2 id="view-title" class="fw-bold text-success">Reception Dashboard</h2>
+                    <div>
+                        <button class="btn btn-copper fw-bold shadow-sm me-2" onclick="openBulkIntakeModal()">⚡ Universal Bulk Intake</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()">Logout</button>
+                    </div>
+                </header>
+
+                <!-- (A) Master Schedule Tab View Pane -->
+                <div id="bookings-view" class="tab-pane animate-fade-in">
+                    <div class="row g-3 text-center mb-4" id="master-schedule-boxes-row">
+                        <div class="col-md-2"><div class="card p-3 border-0 bg-white shadow-sm"><h6 class="small fw-bold text-muted">Guests (Month)</h6><h4 class="fw-bold text-success" id="boxMtdGuests">0</h4></div></div>
+                        <div class="col-md-2"><div class="card p-3 border-0 bg-white shadow-sm"><h6 class="small fw-bold text-muted">Treatments Total</h6><h4 class="fw-bold text-primary" id="boxMtdTxCount">0</h4></div></div>
+                        <div class="col-md-3"><div class="card p-3 border-0 bg-white shadow-sm"><h6 class="small fw-bold text-muted">Avg Room Bed Util %</h6><h4 class="fw-bold text-warning" id="boxMtdUtilRate">0%</h4></div></div>
+                        <div class="col-md-2"><div class="card p-3 border-0 bg-white shadow-sm"><h6 class="small fw-bold text-muted">Introducers Active</h6><h4 class="fw-bold text-dark" id="boxMtdIntCount">0</h4></div></div>
+                        <div class="col-md-3"><div class="card p-3 border-0 bg-white shadow-sm"><h6 class="small fw-bold text-muted">Commissions Paid</h6><h4 class="fw-bold text-danger" id="boxMtdPaidComm">රු. 0</h4></div></div>
+                    </div>
+                    <div class="card p-4 shadow-sm">
+                        <h5 class="fw-bold text-success mb-3">Live Active Operational Log Streams Database</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr><th>Booking ID</th><th>Allocated Room Unit</th><th>Introducer Context</th><th>Gross Paid Sum</th><th>Status State</th></tr>
+                                </thead>
+                                <tbody id="data-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- (B) Manage Flow Live Tracking Pane -->
+                <div id="manage-view" class="tab-pane animate-fade-in" style="display:none;">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card p-4">
+                                <h5 class="fw-bold text-success mb-3">Active Treatment Pipelines Monitoring Engine</h5>
+                                <div id="live-timers-container" class="row g-3"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card p-3 bg-light">
+                                <h6 class="fw-bold text-dark border-bottom pb-2">♨️ Post-Massage Steam Chambers Controller</h6>
+                                <div class="mb-3"><label class="small fw-bold text-success">Steam Chamber Alpha (Max 20m)</label><div id="steam-room-1-status" class="p-2 border rounded bg-white text-muted small">Vacant</div></div>
+                                <div class="mb-3"><label class="small fw-bold text-success">Steam Chamber Beta (Max 20m)</label><div id="steam-room-2-status" class="p-2 border rounded bg-white text-muted small">Vacant</div></div>
+                                <hr>
+                                <h6 class="small fw-bold text-muted text-uppercase tracking-wider">Queue Tea-Waiting Pools (Counting Down)</h6>
+                                <div id="queue-waiting-pool"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- (C) Commission Board Tab View Pane -->
+                <div id="commissions-view" class="tab-pane animate-fade-in" style="display:none;">
+                    <div class="card p-4">
+                        <h5 class="fw-bold text-dark mb-3">Channel Partners Commissions Due Matrix Balance Sheet</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr><th>Commission ID</th><th>Introducer Link Profile</th><th>Total Volume Base</th><th>Rate %</th><th>Payout Due Amount</th><th>Payout Status</th><th>Action Execution</th></tr>
+                                </thead>
+                                <tbody id="commissions-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- (D) Financial Ledgers Audit Trails Pane -->
+                <div id="financials-view" class="tab-pane animate-fade-in" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-3 gap-2 no-print">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-dark fw-bold" onclick="exportDataGridToExcelCSV('financials-table-export-target', 'Financial_Ledgers')">📥 Export CSV Spreadsheet</button>
+                        </div>
+                        <button class="btn btn-danger fw-bold" onclick="triggerDayEndProcessSequenceClosure()">🔒 RUN DAY END LOCK PROCESS</button>
+                    </div>
+                    <div class="card p-4">
+                        <h5 class="fw-bold text-success mb-3">Audited Double-Entry Cash Audit Trails Separation Register</h5>
+                        <div class="table-responsive">
+                            <table class="table small align-middle" id="financials-table-export-target">
+                                <thead class="table-light">
+                                    <tr><th>Ledger ID</th><th>Guest Name Reference</th><th>Base Revenue</th><th>VAS Revenue</th><th>Gross Collected (LKR)</th><th>Settlement Type</th><th>Timestamp</th><th>Day Lock State</th></tr>
+                                </thead>
+                                <tbody id="financials-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- (E) Guest Registry Profiles Index Directory -->
+                <div id="guests-view" class="tab-pane animate-fade-in" style="display:none;">
+                    <div class="card p-4">
+                        <h5 class="fw-bold text-success mb-3">Registered Client Directory Profiles File Index</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr><th>Guest ID</th><th>Full Name</th><th>Country</th><th>Phone Number</th><th>Email</th><th>Stay Location</th><th>Actions</th></tr>
+                                </thead>
+                                <tbody id="guest-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- (F) Report Hub Business Intelligence Summary Pane -->
+                <div id="reports-view" class="tab-pane animate-fade-in" style="display:none;">
+                    <div class="card p-3 mb-3 border-0 bg-light no-print">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-4"><label class="small fw-bold">Query From Date Range</label><input type="date" id="rptDateFrom" class="form-control form-control-sm"></div>
+                            <div class="col-md-4"><label class="small fw-bold">Query To Date Range</label><input type="date" id="rptDateTo" class="form-control form-control-sm"></div>
+                            <div class="col-md-4"><button class="btn btn-sm btn-success w-100 fw-bold" onclick="compileStrategicReportHubAnalytics()">Run Periodic Query Audit</button></div>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <h5 class="fw-bold text-success mb-4">Strategic Business Intelligence Analytical Reports Hub</h5>
+                        <div class="row g-3 text-center mb-4" id="reports-injection-zone"></div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6"><h6 class="fw-bold text-muted">Specialist Therapist Production Yield Hours</h6><div id="rpt-therapists-yield-zone" class="small text-secondary"></div></div>
+                            <div class="col-md-6"><h6 class="fw-bold text-muted">Channel Intermediary Introducers Inflow Standings</h6><div id="rpt-introducers-yield-zone" class="small text-secondary"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- (G) Admin Panel Submodules Configurations Wrapper -->
+                <div id="admin-view" class="tab-pane animate-fade-in" style="display:none;">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="list-group shadow-sm border-0" id="adminSubTabsList">
+                                <button class="list-group-item list-group-item-action active" data-tab="treatments" onclick="showAdminSubTab('treatments')">Manage Treatments</button>
+                                <button class="list-group-item list-group-item-action" data-tab="therapists" onclick="showAdminSubTab('therapists')">Manage Therapists</button>
+                                <button class="list-group-item list-group-item-action" data-tab="users" onclick="showAdminSubTab('users')">Manage Users</button>
+                                <button class="list-group-item list-group-item-action" data-tab="rooms" onclick="showAdminSubTab('rooms')">Manage Rooms</button>
+                                <button class="list-group-item list-group-item-action" data-tab="introducers" onclick="showAdminSubTab('introducers')">Manage Introducers</button>
+                                <button class="list-group-item list-group-item-action bg-light text-danger fw-bold" data-tab="rollback" onclick="showAdminSubTab('rollback')">🔓 Reversal Overrides Gate</button>
+                                <button class="list-group-item list-group-item-action" data-tab="system" onclick="showAdminSubTab('system')">API Handshakes</button>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div id="admin-content" class="card shadow-sm p-4 border-0"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- (H) UNIVERSAL FULL-SCREEN POINT-OF-SALE BULK INTAKE CONTAINER MODAL -->
+    <div class="modal fade" id="bulkIntakeModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content border-0">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, var(--primary-green) 0%, #0d3c11 100%);">
+                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                        <h5 class="modal-title fw-bold">🏺 Enterprise Multi-Guest Checkout Split Allocation Engine POS</h5>
+                        <div class="d-flex align-items-center gap-3 bg-white text-dark py-1 px-3 rounded shadow-sm">
+                            <span class="small fw-bold text-muted">Invoicing Output Standard:</span>
+                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="radio" name="currencySelectionNode" id="curLKR" value="LKR" onchange="calculateAggregatedBulkInvoicedSum()" checked><label class="form-check-label small fw-bold" for="curLKR">රු LKR Print</label></div>
+                            <div class="form-check form-check-inline mb-0"><input class="form-check-input" type="radio" name="currencySelectionNode" id="curUSD" value="USD" onchange="calculateAggregatedBulkInvoicedSum()"><label class="form-check-label small fw-bold" for="curUSD">$ USD Print</label></div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('bulkIntakeModal')"></button>
+                </div>
+                <div class="modal-body bg-light p-4">
+                    <form id="bulkIntakeForm">
+                        <div class="row g-3 mb-4 card p-3 border-0 shadow-sm mx-0">
+                            <h6 class="fw-bold text-success mb-1">1. Spatial Room Unit Selection & Intermediary Mapping</h6>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Select Active Physical Target Room Location</label>
+                                <select id="bulkIntakeRoomSelect" class="form-select form-select-sm" onchange="verifyRoomBedCapacityConstraints()" required></select>
+                                <div id="room-capacity-alert" class="form-text text-danger fw-bold small mt-1"></div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Introducer Track Node</label>
+                                <select id="bulkIntakeIntroducerType" class="form-select form-select-sm" onchange="toggleIntroducerVisibilityFields()">
+                                    <option value="Direct">Direct Walk-In (No Channel Fees)</option>
+                                    <option value="Existing">Link Registered Existing Introducer</option>
+                                    <option value="New">Register New Custom Introducer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3" id="section-existing-introducer" style="display:none;">
+                                <label class="form-label small fw-bold">Select Active Introducer Partner</label>
+                                <select id="bulkIntakeIntroducerSelect" class="form-select form-select-sm"></select>
+                            </div>
+                        </div>
+
+                        <!-- Independent Partner On-The-Fly Registrations Workspace -->
+                        <div id="section-new-introducer" class="row g-2 mb-4 card p-3 border-0 shadow-sm mx-0 bg-white text-dark" style="display:none;">
+                            <h6 class="fw-bold text-warning mb-2">New Introducer Registration Parameters</h6>
+                            <div class="col-md-3"><label class="small fw-bold mb-1">Full Legal Name</label><input type="text" id="newIntroFullName" class="form-control form-control-sm"></div>
+                            <div class="col-md-2"><label class="small fw-bold mb-1">Calling Name</label><input type="text" id="newIntroCallingName" class="form-control form-control-sm"></div>
+                            <div class="col-md-3"><label class="small fw-bold mb-1">NIC Identification Code</label><input type="text" id="newIntroNIC" class="form-control form-control-sm"></div>
+                            <div class="col-md-4"><label class="small fw-bold mb-1">Physical Address Location</label><input type="text" id="newIntroAddress" class="form-control form-control-sm"></div>
+                        </div>
+
+                        <!-- Client Rows Container Up to 5 Items splits -->
+                        <div class="card p-3 border-0 shadow-sm mb-4">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <h6 class="fw-bold text-success mb-0">2. Dynamic Guest Sub-allocations Splits Matrix</h6>
+                                <button type="button" class="btn btn-sm btn-outline-success fw-bold" onclick="addNewGuestAllocationRowMarkup()"> wilderness ➕ Append Guest Entry Splitting Row (+)</button>
+                            </div>
+                            <div id="dynamic-guests-rows-container"></div>
+                        </div>
+
+                        <!-- Locked Consolidated Invoicing Block -->
+                        <div class="card p-3 bg-dark text-white border-0 shadow">
+                            <h6 class="fw-bold text-warning border-bottom pb-2 mb-3">3. Final Consolidated Point of Sale Settlement Confirmation</h6>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="small text-white-50">Settlement Method Pathway Choice</label>
+                                    <select id="bulkSettlementMethod" class="form-select bg-dark text-white border-secondary" required>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Card">Visa / MasterCard Terminal</option>
+                                        <option value="Transfer">Bank Wire Transfer</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="p-2 border border-dashed rounded text-center border-warning">
+                                        <span class="small text-white-50">Aggregated Total Liabilities Settlement Price:</span><br>
+                                        <h3 class="fw-bold text-warning mb-0" id="lblBulkTotalCalculation">රු. 0.00</h3>
+                                    </div>
+                                </div>
+                                <div class="col-md-4"><button type="submit" class="btn btn-warning w-100 fw-bold py-3" id="btnSubmitBulkIntake">Execute POS & Split Balances</button></div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUB-DYNAMIC MODAL CREATION FORMS INITIALIZERS -->
+    <div class="modal fade" id="editGuestModal" data-bs-backdrop="static" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-success text-white"><h5 class="modal-title fw-bold">Update Client Parameters Profile</h5><button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('editGuestModal')"></button></div><div class="modal-body"><form id="editGuestForm"><input type="hidden" id="editGuestRecordId"><div class="mb-2"><label class="small fw-bold">Full Identity Name</label><input type="text" id="editGuestFullName" class="form-control form-control-sm" required></div><div class="mb-2"><label class="small fw-bold">Select Country Origin</label><select id="editGuestCountrySelect" class="form-select form-select-sm" onchange="patchGuestCountryDialCodeMapping()"></select></div><div class="mb-2"><label class="small fw-bold">Phone Contact Number</label><input type="tel" id="editGuestPhone" class="form-control form-control-sm" required></div><div class="mb-2"><label class="small fw-bold">Email Address File</label><input type="email" id="editGuestEmail" class="form-control form-control-sm"></div><div class="mb-3"><label class="small fw-bold">Hotel / Staying Place</label><input type="text" id="editGuestHotel" class="form-control form-control-sm"></div><button type="submit" class="btn btn-success w-100 fw-bold btn-sm">Commit Changes Profile</button></form></div></div></div></div>
+    <div class="modal fade" id="addTreatmentModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-success text-white"><h5>Create Service Menu Item</h5><button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('addTreatmentModal')"></button></div><div class="modal-body"><form id="treatmentForm"><div class="mb-3"><label class="form-label">Treatment Name</label><input type="text" id="newTreatmentName" class="form-control" required></div><div class="row g-2 mb-3"><div class="col-6"><label class="form-label">Price (LKR රු.)</label><input type="number" id="newTreatmentPrice" class="form-control" required></div><div class="col-6"><label class="form-label">Duration in Minutes</label><input type="number" id="newTreatmentDuration" class="form-control" required value="60"></div></div><button type="submit" class="btn btn-success w-100 fw-bold">Commit Menu Item</button></form></div></div></div></div>
+    <div class="modal fade" id="addTherapistModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-success text-white"><h5>Register Practitioner Specialist</h5><button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('addTherapistModal')"></button></div><div class="modal-body"><form id="therapistForm"><div class="mb-3"><label class="form-label">Full Legal Name</label><input type="text" id="newTherapistName" class="form-control" required></div><div class="mb-3"><label class="form-label">Specialty Assignment</label><input type="text" id="newTherapistSpecialty" class="form-control" placeholder="e.g. Traditional Abhyanga Ritual" required></div><button type="submit" class="btn btn-success w-100 fw-bold">Commit Staff Profile</button></form></div></div></div></div>
+    <div class="modal fade" id="addRoomModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-success text-white"><h5>Add Spatial Room Unit</h5><button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('addRoomModal')"></button></div><div class="modal-body"><form id="roomForm"><div class="mb-3"><label class="form-label">Room Number Designation</label><input type="text" id="newRoomNumber" class="form-control" required></div><div class="row g-2 mb-3"><div class="col-6"><label class="form-label">Beds Capacity Count</label><input type="number" id="newRoomBeds" class="form-control" required value="1" step="1"></div><div class="col-6"><label class="form-label">Spatial Room Typing Layout</label><select id="newRoomType" class="form-select"><option value="Standard Single">Standard Single</option><option value="Standard Triple">Standard Triple</option></select></div></div><button type="submit" class="btn btn-success w-100 fw-bold">Commit Spatial Frame</button></form></div></div></div></div>
+    <div class="modal fade" id="addUserModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-dark text-white"><h5>Create System User Account Credentials</h5><button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('addUserModal')"></button></div><div class="modal-body"><form id="userForm"><div class="mb-2"><label class="small fw-bold">Full Legal Name</label><input type="text" id="newUserFullName" class="form-control form-control-sm" required></div><div class="mb-2"><label class="small fw-bold">Calling Name</label><input type="text" id="newUserCallingName" class="form-control form-control-sm" required></div><div class="mb-2"><label class="small fw-bold">NIC Number Reference</label><input type="text" id="newUserNIC" class="form-control form-control-sm" required></div><div class="row g-2 mb-2"><div class="col-6"><label class="small fw-bold">Username Reference</label><input type="text" id="newUserName" class="form-control form-control-sm" required></div><div class="col-6"><label class="small fw-bold">Password Key Reference</label><input type="password" id="newUserPass" class="form-control form-control-sm" required></div></div><div class="mb-3"><label class="small fw-bold text-success">Select Structural Role Option Group</label><select id="newUserRoleSelect" class="form-select form-select-sm" required></select></div><button type="submit" class="btn btn-success w-100 fw-bold btn-sm">Commit Account Account</button></form></div></div></div></div>
+    <div class="modal fade" id="addIntroModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-success text-white"><h5>Register Independent Introducer</h5><button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('addIntroModal')"></button></div><div class="modal-body"><form id="introForm"><div class="mb-2"><label class="small fw-bold">Full Legal Name</label><input type="text" id="adminIntroFullName" class="form-control form-control-sm" required></div><div class="mb-2"><label class="small fw-bold">NIC Number Code</label><input type="text" id="adminIntroNIC" class="form-control form-control-sm" required></div><div class="mb-2"><label class="small fw-bold">Physical Address Line Location</label><input type="text" id="adminIntroAddress" class="form-control form-control-sm"></div><button type="submit" class="btn btn-sm btn-success w-100 mt-2 fw-bold">Commit Introducer</button></form></div></div></div></div>
+
+    <!-- Bootstrap 5.3.0 Bundled JS Engine Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Decoupled Enterprise Layer Functional JS Modules Scripts Imports Matrix -->
+    <script src="js/config.js"></script>
+    <script src="js/utilities.js"></script>
+    <script src="js/airtable.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/bookings.js"></script>
+    <script src="js/manage.js"></script>
+    <script src="js/financials.js"></script>
+    <script src="js/guests.js"></script>
+    <script src="js/reports.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
