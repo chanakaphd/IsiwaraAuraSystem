@@ -3,8 +3,8 @@
  */
 
 // Core Security Bearer and Base Storage Key Handshakes
-let AIRTABLE_API_KEY = localStorage.getItem('isiwara_api_key') || '';
-let BASE_ID = localStorage.getItem('isiwara_base_id') || '';
+let AIRTABLE_API_KEY = localStorage.getItem('AIRTABLE_API_KEY') || '';
+let BASE_ID = localStorage.getItem('BASE_ID') || '';
 
 // Live Progress Background Timers Memory Slots Registry
 let localLiveTimerQueueDatabase = [];
