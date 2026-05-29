@@ -61,38 +61,40 @@ async function fetchAirtableTableRecords(tableName) {
 }
 
 /**
- * Executes a stateless atomic POST request to insert records into an Airtable table.
- * @param {string} tableName - Case-sensitive name matching your real database sheet structure
- * @param {Object} fieldsDataMap - Key-value column map matching your field schema headers
- * @returns {Object} Newly created single record line transaction data mapping object
+ * Global Airtable API Async REST Request Handler
+ * Dispatches secure headers out to cloud table endpoints
+ * @param {string} tableWithParams - Target table name and optional query syntax strings
+ * @returns {Array} Extracted row records array from server response
  */
-async function dispatchPostRESTRequestHandshake(tableName, fieldsDataMap) {
+async function fetchAirtableTableRecords(tableWithParams) {
     if (!AIRTABLE_API_KEY || !BASE_ID) {
-        console.warn(`Local Proxy Simulation Write executed for table block: [${tableName}]`);
-        return { id: "mock_" + Math.floor(Math.random() * 100000), fields: fieldsDataMap };
+        console.warn("API Execution Halted: Configuration parameters are incomplete.");
+        return [];
     }
 
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(tableName)}`;
+    const endpointUrl = `https://api.airtable.com/v0/${BASE_ID}/${tableWithParams}`;
+    
     try {
-        const response = await fetch(url, {
-            method: 'POST',
+        const response = await fetch(endpointUrl, {
+            method: 'GET',
             headers: {
                 'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ records: [{ fields: fieldsDataMap }] })
+            }
         });
 
         if (!response.ok) {
-            const errBody = await response.text();
-            throw new Error(`POST execution failed with status ${response.status}: ${errBody}`);
+            const errorDetails = await response.text();
+            console.error(`Airtable Server Rejected Request [${response.status}]:`, errorDetails);
+            throw new Error(`Network response error: ${response.status}`);
         }
 
-        const result = await response.json();
-        return result.records ? result.records[0] : result;
-    } catch (ex) {
-        console.error(`REST structural insertion failed on target table [${tableName}]:`, ex);
-        throw ex;
+        const dataPayload = await response.json();
+        return dataPayload.records || [];
+
+    } catch (networkError) {
+        console.error(`Critical fetch exception dropped on [${tableWithParams}]:`, networkError);
+        throw networkError;
     }
 }
 
