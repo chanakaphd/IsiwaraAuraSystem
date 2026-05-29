@@ -285,8 +285,8 @@ async function showAdminSubTab(subTab) {
         content.innerHTML = `
             <h5 class="fw-bold text-success mb-1">System Core Parameter Handshake Endpoints</h5>
             <p class="text-muted small">Configurations saved locally inside browser cache arrays to drive silent background REST queries loops.</p><hr>
-            <div class="mb-2"><label class="small fw-bold text-muted">Bearer Token Secret Key Reference</label><input type="password" id="sysApiKeyEdit" class="form-control form-control-sm" value="${currentApiKey}"></div>
-            <div class="mb-3"><label class="small fw-bold text-muted">Airtable Base Identifier ID Reference</label><input type="text" id="sysBaseIdEdit" class="form-control form-control-sm" value="${currentBaseId}"></div>
+            <div class="mb-2"><label class="small fw-bold text-muted">Bearer Token Secret Key Reference</label><input type="password" id="sysApiKeyEdit" class="form-control form-control-sm" value="${AIRTABLE_API_KEY}"></div>
+            <div class="mb-3"><label class="small fw-bold text-muted">Airtable Base Identifier ID Reference</label><input type="text" id="sysBaseIdEdit" class="form-control form-control-sm" value="${BASE_ID}"></div>
             <hr>
             <h6 class="fw-bold text-success mb-2">Extended Corporate Document Branding Settings</h6>
             <div class="mb-2"><label class="small fw-bold text-muted">Company Legal Trade Name</label><input type="text" id="cfgCoName" class="form-control form-control-sm" value="${localStorage.getItem('co_name_override') || 'Isiwara Aura'}"></div>
