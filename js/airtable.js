@@ -41,26 +41,6 @@ async function synchronizeLocalMetadataCachePools() {
 }
 
 /**
- * Helper function executing clean GET requests against specific Airtable tables
- * @param {string} tableName - Target base sheet name string
- * @returns {Array} Array of Airtable record objects
- */
-async function fetchAirtableTableRecords(tableName) {
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(tableName)}`;
-    try {
-        const response = await fetch(url, {
-            headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` }
-        });
-        if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
-        const data = await response.json();
-        return data.records || [];
-    } catch (err) {
-        console.error(`Fetch routine dropped on table index [${tableName}]:`, err);
-        return [];
-    }
-}
-
-/**
  * Global Airtable API Async REST Request Handler
  * Dispatches secure headers out to cloud table endpoints
  * @param {string} tableWithParams - Target table name and optional query syntax strings
@@ -72,7 +52,12 @@ async function fetchAirtableTableRecords(tableWithParams) {
         return [];
     }
 
-    const endpointUrl = `https://api.airtable.com/v0/${BASE_ID}/${tableWithParams}`;
+    // Safely parse table names that contain spaces or special parameters cleanly
+    const sanitizedPath = tableWithParams.includes('?') || tableWithParams.includes('/') 
+        ? tableWithParams 
+        : encodeURIComponent(tableWithParams);
+
+    const endpointUrl = `https://api.airtable.com/v0/${BASE_ID}/${sanitizedPath}`;
     
     try {
         const response = await fetch(endpointUrl, {
@@ -86,7 +71,7 @@ async function fetchAirtableTableRecords(tableWithParams) {
         if (!response.ok) {
             const errorDetails = await response.text();
             console.error(`Airtable Server Rejected Request [${response.status}]:`, errorDetails);
-            throw new Error(`Network response error: ${response.status}`);
+            return [];
         }
 
         const dataPayload = await response.json();
@@ -94,7 +79,7 @@ async function fetchAirtableTableRecords(tableWithParams) {
 
     } catch (networkError) {
         console.error(`Critical fetch exception dropped on [${tableWithParams}]:`, networkError);
-        throw networkError;
+        return [];
     }
 }
 
