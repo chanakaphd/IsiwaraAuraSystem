@@ -18,7 +18,11 @@ async function fetchAndRenderFinancialLedgersView() {
         tbody.innerHTML = (res || []).map(record => {
             const f = record.fields;
             // Establish if record falls within an automated historical day-end freeze partition
-            const isLocked = f['Settlement Type']?.includes('LOCKED_ARCHIVED') || f['Ledger ID']?.startsWith('LCK-');
+            const ledgerId = String(f['Ledger ID'] || '');
+
+const isLocked =
+    (f['Settlement Type'] || '').includes('LOCKED_ARCHIVED') ||
+    ledgerId.startsWith('LCK-');
             
             return `
                 <tr class="animate-fade-in">
