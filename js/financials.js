@@ -15,7 +15,7 @@ async function fetchAndRenderFinancialLedgersView() {
     try {
         const res = await fetchAirtableTableRecords('Financial%20Ledgers?sort[0][field]=Transaction%20Timestamp&sort[0][direction]=desc');
         
-       tbody.innerHTML = (res || []).map(record => {
+      tbody.innerHTML = (res || []).map(record => {
     try {
         const f = record.fields || {};
 
@@ -25,30 +25,24 @@ async function fetchAndRenderFinancialLedgersView() {
         const isLocked =
             settlementType.includes('LOCKED_ARCHIVED') ||
             ledgerId.startsWith('LCK-');
-            
-            return `
-                <tr class="animate-fade-in">
-                    <td><strong>${f['Ledger ID'] || 'LED-PRX'}</strong></td>
-                    <td>${f['Guest Name Reference'] || 'Walk-In'}</td>
-                    <td>රු. ${(f['Base Revenue'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td>රු. ${(f['VAS Revenue'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td class="fw-bold text-success">රු. ${(f['Gross Collected'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td><span class="badge bg-secondary">${f['Settlement Type'] || 'Settled'}</span></td>
-                    <td>${f['Transaction Timestamp'] ? new Date(f['Transaction Timestamp']).toLocaleTimeString() : 'N/A'}</td>
-                    <td><span class="badge ${isLocked ? 'bg-danger' : 'bg-success'}">${isLocked ? 'Locked (Past Audit)' : 'Open Daily'}</span></td>
-                </tr>
-            `;
-        }).join('');
 
-        if (res.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-3 text-muted">Financial ledgers registry empty.</td></tr>`;
-        }
-    } catch (err) {
-        console.error("Failed to parse financial ledgers layout grid:", err);
-        tbody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-3">⚠️ Network Timeout: Failed to sync financial trails.</td></tr>`;
+        return `
+            <tr class="animate-fade-in">
+                <td><strong>${f['Ledger ID'] || 'LED-PRX'}</strong></td>
+                <td>${f['Guest Name Reference'] || 'Walk-In'}</td>
+                <td>රු. ${(f['Base Revenue'] || 0).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+                <td>රු. ${(f['VAS Revenue'] || 0).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+                <td class="fw-bold text-success">රු. ${(f['Gross Collected'] || 0).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+                <td><span class="badge bg-secondary">${f['Settlement Type'] || 'Settled'}</span></td>
+                <td>${f['Transaction Timestamp'] ? new Date(f['Transaction Timestamp']).toLocaleTimeString() : 'N/A'}</td>
+                <td><span class="badge ${isLocked ? 'bg-danger' : 'bg-success'}">${isLocked ? 'Locked (Past Audit)' : 'Open Daily'}</span></td>
+            </tr>
+        `;
+    } catch(err) {
+        console.error("Bad ledger row:", record, err);
+        return '';
     }
-}
-
+}).join('');
 /**
  * Reads and renders active partner commissions lines straight from Airtable.
  */
