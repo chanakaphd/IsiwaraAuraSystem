@@ -78,3 +78,50 @@ function showTab(viewName) {
     if (viewName === 'reports' && typeof compileStrategicReportHubAnalytics === 'function') compileStrategicReportHubAnalytics();
     if (viewName === 'admin' && typeof showAdminSubTab === 'function') showAdminSubTab('treatments');
 }
+/**
+ * Saves Admin Handshake Settings to Browser Storage
+ * Captures keys, saves them locally, and executes a clean app reboot
+ */
+function saveSystemSettingsFromAdmin() {
+    const apiKeyInput = document.getElementById('sysApiKeyEdit');
+    const baseIdInput = document.getElementById('sysBaseIdEdit');
+    const coNameInput = document.getElementById('cfgCoName');
+    const coPrintInput = document.getElementById('cfgCoPrintName');
+    const coRegInput = document.getElementById('cfgCoRegNo');
+    const coLogoInput = document.getElementById('cfgCoLogoUrl');
+
+    if (!apiKeyInput || !baseIdInput) {
+        alert("Configuration Error: Form components mapped incorrectly.");
+        return;
+    }
+
+    const cleanApiKey = apiKeyInput.value.trim();
+    const cleanBaseId = baseIdInput.value.trim();
+
+    if (!cleanApiKey || !cleanBaseId) {
+        alert("Validation Error:\nYou must supply both a valid Bearer Token and Base ID to link your Airtable account.");
+        return;
+    }
+
+    // 1. Commit credentials permanently to localStorage cache pools
+    localStorage.setItem('AIRTABLE_API_KEY', cleanApiKey);
+    localStorage.setItem('BASE_ID', cleanBaseId);
+
+    // 2. Commit optional document branding overrides
+    if (coNameInput) localStorage.setItem('co_name_override', coNameInput.value.trim());
+    if (coPrintInput) localStorage.setItem('co_print_name', coPrintInput.value.trim());
+    if (coRegInput) localStorage.setItem('co_reg_no', coRegInput.value.trim());
+    if (coLogoInput) localStorage.setItem('co_logo_src', coLogoInput.value.trim());
+
+    // 3. Notify user with custom toast overlay if available, otherwise native alert
+    if (typeof triggerCustomSwalNotification === 'function') {
+        triggerCustomSwalNotification("Handshake Saved!", "System parameters overwritten. Synchronizing connection streams...");
+    } else {
+        alert("Handshake Saved Successfully!\nSystem will now reboot to sync live database streams.");
+    }
+
+    // 4. Force a hard window reload after a 1.2-second pause to let the user process the confirmation
+    setTimeout(() => {
+        window.location.reload();
+    }, 1200);
+}
