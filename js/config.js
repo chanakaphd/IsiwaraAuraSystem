@@ -11,15 +11,15 @@ var AIRTABLE_API_KEY = localStorage.getItem('AIRTABLE_API_KEY') || '';
 var BASE_ID = localStorage.getItem('BASE_ID') || '';
 
 // Live Progress Background Timers Memory Slots Registry
-let localLiveTimerQueueDatabase = [];
+var localLiveTimerQueueDatabase = [];
 
-// Volatile Application Metadata Synchronization Cache Matrices
-let cacheRooms = [];
-let cacheTreatments = [];
-let cacheTherapists = [];
-let cacheIntroducers = [];
-let cacheRoles = [];
-let globalCountriesList = [];
+// Volatile Application Metadata Synchronization Cache Matrices (UPDATED TO VAR)
+var cacheRooms = [];
+var cacheTreatments = [];
+var cacheTherapists = [];
+var cacheIntroducers = [];
+var cacheRoles = [];
+var globalCountriesList = [];
 
 // Active Operation Target Index Tracker for Completion Overlays Interventions
 let currentInterventionNodeIndex = null;
