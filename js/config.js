@@ -2,9 +2,13 @@
  * Isiwara Aura Management Architecture - Global Configurations Register
  */
 
+/**
+ * Isiwara Aura - Core Global Memory States Cache
+ */
+
 // Core Security Bearer and Base Storage Key Handshakes
-let AIRTABLE_API_KEY = localStorage.getItem('AIRTABLE_API_KEY') || '';
-let BASE_ID = localStorage.getItem('BASE_ID') || '';
+var AIRTABLE_API_KEY = localStorage.getItem('AIRTABLE_API_KEY') || '';
+var BASE_ID = localStorage.getItem('BASE_ID') || '';
 
 // Live Progress Background Timers Memory Slots Registry
 let localLiveTimerQueueDatabase = [];
