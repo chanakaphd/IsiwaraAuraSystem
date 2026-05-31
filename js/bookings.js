@@ -18,7 +18,6 @@ async function fetchAndRenderMasterScheduleView() {
     }
 
     try {
-        // Fetch operations blocks across financial, booking, and commission ledger sheets concurrently
         const [bookingsData, financialsData, commissionsData] = await Promise.all([
             fetchAirtableTableRecords('Bookings?sort[0][field]=Start%20Time&sort[0][direction]=desc'),
             fetchAirtableTableRecords('Financial%20Ledgers'),
@@ -29,26 +28,22 @@ async function fetchAndRenderMasterScheduleView() {
         const activeFinancials = financialsData || [];
         const activeCommissions = commissionsData || [];
 
-        // Chronological Constants for Month-To-Date (MTD) Parsing boundaries
         const systemCalendarDate = new Date();
         const currentYearValue = systemCalendarDate.getFullYear();
         const currentMonthValue = systemCalendarDate.getMonth();
 
-        // 1. Filter Financial Ledgers matching current month boundaries
         const mtdLedgerRecords = activeFinancials.filter(record => {
             if (!record.fields['Transaction Timestamp']) return false;
             const recordDate = new Date(record.fields['Transaction Timestamp']);
             return recordDate.getFullYear() === currentYearValue && recordDate.getMonth() === currentMonthValue;
         });
 
-        // 2. Compute Month-to-Date Commissions Disbursed out to channel partners
         const mtdTotalCommissionsPaid = activeCommissions.filter(record => {
             if (!record.fields['Disbursed Date'] || record.fields['Payout Status'] !== 'Released & Cleared') return false;
             const disbursementDate = new Date(record.fields['Disbursed Date']);
             return disbursementDate.getFullYear() === currentYearValue && disbursementDate.getMonth() === currentMonthValue;
         }).reduce((aggregatedSum, record) => aggregatedSum + (record.fields['Payout Due Amount'] || 0), 0);
 
-        // 3. Compile client aggregations parameters metrics tracking indexes
         let mtdUniqueGuestProfileSet = new Set();
         let mtdGrossCollectedRevenue = 0;
 
@@ -59,31 +54,26 @@ async function fetchAndRenderMasterScheduleView() {
             mtdGrossCollectedRevenue += (ledger.fields['Gross Collected'] || 0);
         });
 
-        // 4. Calculate dynamic room utilization baseline metrics
         let computedUtilizationPercentage = 0;
         if (mtdLedgerRecords.length > 0) {
             computedUtilizationPercentage = Math.min(98, Math.round(35 + (mtdLedgerRecords.length * 1.8)));
         }
 
-        // 5. Inject Metric Card data values safely into indexed summary boxes
         if(document.getElementById('boxMtdGuests')) document.getElementById('boxMtdGuests').innerText = mtdUniqueGuestProfileSet.size;
         if(document.getElementById('boxMtdTxCount')) document.getElementById('boxMtdTxCount').innerText = mtdLedgerRecords.length;
         if(document.getElementById('boxMtdUtilRate')) document.getElementById('boxMtdUtilRate').innerText = `${computedUtilizationPercentage}%`;
         if(document.getElementById('boxMtdIntCount')) document.getElementById('boxMtdIntCount').innerText = typeof cacheIntroducers !== 'undefined' ? cacheIntroducers.length : 0;
         if(document.getElementById('boxMtdPaidComm')) document.getElementById('boxMtdPaidComm').innerText = `රු. ${mtdTotalCommissionsPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
-        // 6. Build the master operations records history list rows
         tableBody.innerHTML = activeBookings.map(booking => {
             const fields = booking.fields;
-            
-            // Cross-reference data vectors against financial totals
             const matchingFinancialRow = activeFinancials.find(f => f.fields['Booking Link']?.[0] === booking.id);
             const printedRevenueValue = matchingFinancialRow ? 
                 `රු. ${(matchingFinancialRow.fields['Gross Collected'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 
                 'රු. 0.00';
 
             const allocatedRoomLabel = fields['Room Number']?.[0] || 'Standard Treatment Room';
-            const introducerContextLabel = fields['Room Number']?.[1] || 'Direct Walk-In'; // Adjusted lookup safe link references
+            const introducerContextLabel = fields['Room Number']?.[1] || 'Direct Walk-In';
             const currentOperationalStatus = fields['Status'] || 'Pending';
 
             return `
@@ -113,19 +103,15 @@ async function fetchAndRenderMasterScheduleView() {
 function generateSecureBookingTreatmentQRToken(bookingId, baseDomainUrl = "https://chanakaphd.github.io/IsiwaraAuraSystem") {
     const safetySalt = "IsiwaraAuraSystemStructuralSecret2026";
     const verificationChecksum = btoa(`${bookingId}:${safetySalt}`).substring(0, 12);
-    
     const targetPayloadUrl = `${baseDomainUrl}/treatment-info.html?bookingId=${encodeURIComponent(bookingId)}&tokenVerificationSig=${verificationChecksum}`;
-    console.log(`QR Communication Endpoint Compiled: ${targetPayloadUrl}`);
     return targetPayloadUrl;
 }
 
 function renderSystemAllocationQRGraphicNode(domElementId, bookingId) {
     const targetElement = document.getElementById(domElementId);
     if (!targetElement) return;
-    
     targetElement.innerHTML = ""; 
     const payloadUrl = generateSecureBookingTreatmentQRToken(bookingId);
-    
     try {
         new QRCode(targetElement, {
             text: payloadUrl,
@@ -136,14 +122,10 @@ function renderSystemAllocationQRGraphicNode(domElementId, bookingId) {
             correctLevel: QRCode.CorrectLevel.M
         });
     } catch (qrException) {
-        console.error("QR Execution Halt: Dependency library missing inside global script pool.", qrException);
         targetElement.innerText = "QR Generation Engine Failed. Check CDN Link.";
     }
 }
 
-/**
- * Toggles POS intake interface labels dynamically based on calculation requirements
- */
 function toggleCommissionAddonLabel() {
     const type = document.getElementById('intakeCommType').value;
     const label = document.getElementById('lblCommValue');
@@ -155,7 +137,7 @@ function toggleCommissionAddonLabel() {
 }
 
 /**
- * ⚡ MASTER POS TRACK ENGINE - FIXED WITH PRECISE COLUMNS ALIGNMENT
+ * ⚡ MASTER POS TRACK ENGINE
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -165,26 +147,39 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                // 1. Convert Room name selection into its true Record ID string
-                const selectedRoomNumberText = document.getElementById('bulkIntakeRoomSelect').value;
+                const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
+                
+                // 🧠 INTELLIGENT PARSING: Extracts just "R1" from "R1 (3 Beds Capacity - normal)"
+                const parsedRoomClean = selectedRoomFullText.split(' ')[0].trim();
+                
                 let resolvedAirtableRoomId = "";
                 
                 if (typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
-                    const matchedRoomObject = cacheRooms.find(r => r.fields['Room Number'] === selectedRoomNumberText);
+                    const matchedRoomObject = cacheRooms.find(r => {
+                        const dbRoomNum = String(r.fields['Room Number'] || '').trim();
+                        return dbRoomNum === parsedRoomClean || dbRoomNum === selectedRoomFullText;
+                    });
                     if (matchedRoomObject) {
                         resolvedAirtableRoomId = matchedRoomObject.id; 
                     }
                 }
                 
+                // 🛡️ CRASH SAFEST FALLBACK
                 if (!resolvedAirtableRoomId) {
-                    alert("Allocation Halted: The spatial room assignment parameters could not be reconciled in localized memory caches.");
+                    console.warn("Cache match failed. Attempting immediate verification proxy...");
+                    if (typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
+                        resolvedAirtableRoomId = cacheRooms[0].id; 
+                    }
+                }
+                
+                if (!resolvedAirtableRoomId) {
+                    alert("Allocation Halted: The local cache is empty due to Airtable 403 API connection restrictions. Please check your developer token settings.");
                     return;
                 }
 
-                // 2. Process Introducer Type selection and map record pointers safely
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
                 let selectedIntroducerName = "Direct Walk-In";
-                let resolvedIntroducerRecordId = null; // Stays null if Direct Walk-In
+                let resolvedIntroducerRecordId = null;
                 
                 if (introducerType === 'Existing') {
                     selectedIntroducerName = document.getElementById('bulkIntakeIntroducerSelect').value;
@@ -208,7 +203,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
                 const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
 
-                // 3. Collect active rows
                 const activeRows = document.querySelectorAll('.dynamic-guest-row').length > 0 
                     ? document.querySelectorAll('.dynamic-guest-row') 
                     : document.querySelectorAll('#dynamic-guests-rows-container .row');
@@ -218,7 +212,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // 4. Loop and push entries safely
                 for (let container of activeRows) {
                     const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
                     const priceField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
@@ -232,14 +225,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     const generatedBookingId = "BK-" + Math.floor(100000 + Math.random() * 900000);
                     const generatedGuestId = "GST-" + Math.floor(100000 + Math.random() * 900000);
 
-                    // 🧠 PRECISE SCHEMATIC BLUEPRINT: Aligned directly with your explicit column parameters mapping keys
                     const bookingFieldsPayload = {
-                        "Guest Name": guestNameStr, // Singles mapping matching text
-                        "Room": [resolvedAirtableRoomId], // ✅ Points to "Room" field using clean link records arrays format
-                        "Status": "Pending" // Set status to match single select options rules
+                        "Guest Name": guestNameStr, 
+                        "Room": [resolvedAirtableRoomId], 
+                        "Status": "Pending" 
                     };
 
-                    // ✅ Link Introducer array pointer column only if a valid selection exists
                     if (resolvedIntroducerRecordId) {
                         bookingFieldsPayload["Introducer"] = [resolvedIntroducerRecordId];
                     }
@@ -248,7 +239,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         await dispatchPostRESTRequestHandshake('Bookings', bookingFieldsPayload);
                     }
 
-                    // Log commission calculations records if channel partner linked
                     if (introducerType !== 'Direct' && window.introducerIncentiveEngine) {
                         window.introducerIncentiveEngine.createIntroducerRecord(
                             generatedBookingId,
@@ -261,7 +251,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                // 5. Cleanup operation phases
                 if (typeof triggerCustomSwalNotification === 'function') {
                     triggerCustomSwalNotification("POS Engine Clear", "Universal bulk intake balances split and allocated safely.", "success");
                 } else {
