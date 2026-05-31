@@ -137,7 +137,7 @@ function toggleCommissionAddonLabel() {
 }
 
 /**
- * ⚡ MASTER POS TRACK ENGINE
+ * ⚡ MASTER POS TRACK ENGINE (OPTIMIZED REGISTRY SYNC)
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -147,29 +147,38 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                const resolvedAirtableRoomId =
-document.getElementById('bulkIntakeRoomSelect').value;
-
-if (!resolvedAirtableRoomId) {
-    alert("No room selected.");
-    return;
-}
-                
-                  
-                             
-                // 🛡️ CRASH SAFEST FALLBACK
-                if (!resolvedAirtableRoomId) {
-                    console.warn("Cache match failed. Attempting immediate verification proxy...");
-                    if (typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
-                        resolvedAirtableRoomId = cacheRooms[0].id; 
-                    }
-                }
-                
-                if (!resolvedAirtableRoomId) {
-                    alert("Allocation Halted: The local cache is empty due to Airtable 403 API connection restrictions. Please check your developer token settings.");
+                // 1. Resolve room designation mapping to clean record hashes
+                const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
+                if (!selectedRoomFullText) {
+                    alert("No room selected.");
                     return;
                 }
 
+                // Parse room number prefix (e.g. extracts "R1" out from "R1 (3 Beds Capacity)")
+                const parsedRoomClean = selectedRoomFullText.split(' ')[0].trim();
+                let resolvedAirtableRoomId = "";
+                
+                if (typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
+                    const matchedRoomObject = cacheRooms.find(r => {
+                        const dbRoomNum = String(r.fields['Room Number'] || '').trim();
+                        return dbRoomNum === parsedRoomClean || dbRoomNum === selectedRoomFullText;
+                    });
+                    if (matchedRoomObject) {
+                        resolvedAirtableRoomId = matchedRoomObject.id; 
+                    }
+                }
+                
+                // Fallback verification proxy safety hook
+                if (!resolvedAirtableRoomId && typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
+                    resolvedAirtableRoomId = cacheRooms[0].id; 
+                }
+                
+                if (!resolvedAirtableRoomId) {
+                    alert("Allocation Halted: Local room reference cache is empty.");
+                    return;
+                }
+
+                // 2. Map Introducers channel records handles
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
                 let selectedIntroducerName = "Direct Walk-In";
                 let resolvedIntroducerRecordId = null;
@@ -205,6 +214,11 @@ if (!resolvedAirtableRoomId) {
                     return;
                 }
 
+                // 🔥 OPTIMIZATION: Pull the entire guest table ONCE outside the loop context 
+                // This prevents rate-limit lockouts during multi-guest entries execution!
+                const guestList = await fetchAirtableTableRecords('Guests');
+
+                // 3. Process each guest row entry sequentially
                 for (let container of activeRows) {
                     const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
                     const priceField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
@@ -218,35 +232,32 @@ if (!resolvedAirtableRoomId) {
                     const generatedBookingId = "BK-" + Math.floor(100000 + Math.random() * 900000);
                     const generatedGuestId = "GST-" + Math.floor(100000 + Math.random() * 900000);
 
-                    // Find guest record in Airtable cache
-// Query Guests table directly
-const guestList = await fetchAirtableTableRecords('Guests');
+                    // Search for an existing match in our optimized array container
+                    let matchedGuest = guestList.find(g =>
+                        String(g.fields['Full Name'] || '').trim().toLowerCase() === guestNameStr.toLowerCase()
+                    );
 
-let matchedGuest = guestList.find(g =>
-    String(g.fields['Full Name'] || '').trim().toLowerCase() ===
-    guestNameStr.trim().toLowerCase()
-);
+                    // Automatically generate fresh profile row if no historical identity exists
+                    if (!matchedGuest) {
+                        matchedGuest = await dispatchPostRESTRequestHandshake('Guests', {
+                            "Full Name": guestNameStr
+                        });
+                        console.log("New operational guest record auto-initialized:", matchedGuest);
+                    }
 
-// Create guest automatically if not found
-if (!matchedGuest) {
+                    if (!matchedGuest || !matchedGuest.id) {
+                        console.error(`Bypassing Row Allocation: Could not resolve profile ID entry for ${guestNameStr}`);
+                        continue;
+                    }
 
-    matchedGuest = await dispatchPostRESTRequestHandshake(
-        'Guests',
-        {
-            "Full Name": guestNameStr
-        }
-    );
+                    const guestRecordId = matchedGuest.id;
 
-    console.log("New guest created:", matchedGuest);
-}
-
-const guestRecordId = matchedGuest.id;
-
-const bookingFieldsPayload = {
-    "Guest": [guestRecordId],
-    "Room": [resolvedAirtableRoomId],
-    "Status": "Pending"
-};
+                    // Compile payload keys strictly mapping your relational columns
+                    const bookingFieldsPayload = {
+                        "Guest": [guestRecordId],
+                        "Room": [resolvedAirtableRoomId],
+                        "Status": "Pending"
+                    };
 
                     if (resolvedIntroducerRecordId) {
                         bookingFieldsPayload["Introducer"] = [resolvedIntroducerRecordId];
@@ -268,6 +279,7 @@ const bookingFieldsPayload = {
                     }
                 }
 
+                // 4. Interface Cleanup and Completion Alert operations
                 if (typeof triggerCustomSwalNotification === 'function') {
                     triggerCustomSwalNotification("POS Engine Clear", "Universal bulk intake balances split and allocated safely.", "success");
                 } else {
@@ -289,12 +301,9 @@ const bookingFieldsPayload = {
                 }
 
             } catch (executionError) {
-    console.error("FULL ERROR:", executionError);
-    alert(
-        executionError.message ||
-        JSON.stringify(executionError)
-    );
-}
+                console.error("FULL ERROR:", executionError);
+                alert(executionError.message || JSON.stringify(executionError));
+            }
         };
     }
 });
