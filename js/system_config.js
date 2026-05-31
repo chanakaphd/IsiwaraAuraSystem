@@ -46,3 +46,33 @@ function saveSystemSettingsFromAdmin() {
         alert("Browser Storage Error: Device write permission configurations blocked cache commitment.");
     }
 }
+/**
+ * Isiwara Aura - Analytical Optimization Performance Engine Model Configuration (M/M/c)
+ */
+const SYSTEM_QUEUE_CAPACITY_MODEL = {
+    arrivalLambdaPeakPerHour: 40,
+    serviceMuPerHourPerBed: 1.0,
+    totalPhysicalCapacityBeds: 29,
+    totalSteamCapacityRooms: 2,
+
+    evaluateOperationalEfficiencyMetrics() {
+        const c = this.totalPhysicalCapacityBeds + this.totalSteamCapacityRooms; // 31 active channels
+        const lambda = this.arrivalLambdaPeakPerHour;
+        const mu = this.serviceMuPerHourPerBed;
+        
+        const rhoUtil = lambda / (c * mu);
+        console.log(`📊 Operational Capacity Performance Quotient Analyzed: ${(rhoUtil * 100).toFixed(2)}%`);
+        
+        return {
+            systemSaturationRatio: rhoUtil,
+            isOverCapacityRisk: rhoUtil >= 1.0,
+            recommendedOperationalInterventions: rhoUtil >= 1.0 ? [
+                "Reduce baseline treatment cap allocations down to 45 minutes to enhance transactional throughput.",
+                "Inject 2 additional target therapy units to establish a 33-bed structural safety barrier.",
+                "Implement staggered arrival spacing profiles across external agent incoming channels."
+            ] : ["System flow thresholds stable inside historical normal variations."]
+        };
+    }
+};
+
+window.systemQueueCapacityModel = SYSTEM_QUEUE_CAPACITY_MODEL;
