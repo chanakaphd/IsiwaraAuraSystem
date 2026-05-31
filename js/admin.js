@@ -195,15 +195,17 @@ async function showAdminSubTab(subTab) {
             </tr>
         `).join('') || '<tr><td colspan="3" class="text-center text-muted py-2">No physical spaces initialized.</td></tr>';
         
-        const roomForm = document.getElementById('roomForm');
+       const roomForm = document.getElementById('roomForm');
         if (roomForm) {
             roomForm.onsubmit = async (e) => {
                 e.preventDefault();
                 const fields = { 
                     "Room Number": document.getElementById('newRoomNumber').value.trim(), 
                     "Beds Count": parseInt(document.getElementById('newRoomBeds').value, 10), 
-                    "Room Type": document.getElementById('newRoomType').value 
+                    "Room Type": document.getElementById('newRoomType').value,
+                    "Status": "Available"
                 };
+                
                 await dispatchPostRESTRequestHandshake('Rooms', fields); 
                 safeCloseModal('addRoomModal'); 
                 await synchronizeLocalMetadataCachePools(); 
@@ -211,7 +213,6 @@ async function showAdminSubTab(subTab) {
                 roomForm.reset();
             };
         }
-    }
     
     // ----------------------------------------------------
     // SUB-TAB MODULE WRAPPER: INTRODUCERS PARTNERS CONTRACTS
