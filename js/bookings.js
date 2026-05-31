@@ -32,7 +32,7 @@ async function fetchAndRenderMasterScheduleView() {
         // Chronological Constants for Month-To-Date (MTD) Parsing boundaries
         const systemCalendarDate = new Date();
         const currentYearValue = systemCalendarDate.getFullYear();
-        const currentMonthValue = systemCalendarDate.getMonth(); // 0-Indexed (e.g., 4 for May)
+        const currentMonthValue = systemCalendarDate.getMonth();
 
         // 1. Filter Financial Ledgers matching current month boundaries
         const mtdLedgerRecords = activeFinancials.filter(record => {
@@ -62,7 +62,6 @@ async function fetchAndRenderMasterScheduleView() {
         // 4. Calculate dynamic room utilization baseline metrics
         let computedUtilizationPercentage = 0;
         if (mtdLedgerRecords.length > 0) {
-            // Evaluates total active checkouts against optimal baseline layout thresholds
             computedUtilizationPercentage = Math.min(98, Math.round(35 + (mtdLedgerRecords.length * 1.8)));
         }
 
@@ -167,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                // 1. Convert human-readable target selector string (e.g., "R1") into its internal record string hash index ("recXXXX")
+                // 1. Convert friendly designation (e.g., "R1") into its internal record string hash index ("recXXXX")
                 const selectedRoomNumberText = document.getElementById('bulkIntakeRoomSelect').value;
                 let resolvedAirtableRoomId = "";
                 
@@ -183,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // 2. Establish safe partner scope parameters inherited safely down out of block contexts
+                // 2. Establish safe partner scope parameters outside of conditional blocks
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
                 let selectedIntroducerName = "Direct Walk-In";
                 
@@ -232,10 +231,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     // Compile precise tracking blueprint data objects matching Airtable column mappings exactly
                     const bookingFieldsPayload = {
-                        "Booking ID": generatedBookingId, // ✅ Bypasses 422: Ensure column type is set to 'Single line text' in Airtable!
+                        "Booking ID": generatedBookingId, 
                         "Guest Name": guestNameStr,
                         "Total Package Price": packagePriceNum,
-                        "Room Unit Link": [resolvedAirtableRoomId], // Secure array assignment pointer layout
+                        "Room Unit Link": [resolvedAirtableRoomId], 
                         "Introducer": selectedIntroducerName,
                         "Status": "IN_PROGRESS"
                     };
@@ -273,7 +272,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 
                 bulkIntakeForm.reset();
-                await fetchAndRenderMasterScheduleView();
+                
+                // Safety bound check execution to prevent late-linked script order drops
+                if (typeof fetchAndRenderMasterScheduleView === 'function') {
+                    await fetchAndRenderMasterScheduleView();
+                }
 
             } catch (executionError) {
                 console.error("Critical crash halted bulk processing loop:", executionError);
