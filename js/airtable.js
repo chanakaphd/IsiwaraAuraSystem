@@ -86,6 +86,40 @@ async function fetchAirtableTableRecords(tableWithParams) {
 /**
  * Executes a partial PATCH request to mutate parameters of an existing row.
  * Used for updating introducer disbursements, rolling back day-locks, and patching guest records.
+ * @param {string} tableName - Target table index matching system keys string
+ * @param {string} recordId - Target Airtable alpha-numeric internal unique record ID string
+ * @param {Object} fieldsDataMap - Fields map holding values blocks to overwrite
+ * @returns {Object} Mutated transaction result object framework map
+ */
+async function dispatchPatchRESTRequestHandshake(tableName, recordId, fieldsDataMap) {
+    if (!AIRTABLE_API_KEY || !BASE_ID) {
+        console.warn(`Local Proxy Simulation Overwrite patch processed for table field lines: [${tableName}]`);
+        return { id: recordId, fields: fieldsDataMap };
+    }
+
+    const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(tableName)}/${recordId}`;
+    try {
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ fields: fieldsDataMap })
+        });
+
+        if (!response.ok) {
+            const errBody = await response.text();
+            throw new Error(`PATCH exception thrown with status ${response.status}: ${errBody}`);
+        }
+
+        return await response.json();
+    } catch (ex) {
+        console.error(`REST field alteration thread dropped on target record ID [${recordId}] inside [${tableName}]:`, ex);
+        throw ex;
+    }
+}
+
 /**
  * Global Airtable API Async REST POST Request Handler
  * Packages raw field records and commits them securely to cloud tables
@@ -121,7 +155,6 @@ async function dispatchPostRESTRequestHandshake(tableName, fieldsDataMap) {
         const standardResult = await response.json();
         console.log(`✅ Record successfully committed to Airtable table [${tableName}]:`, standardResult.id);
         
-        // Trigger native alert backup if the custom SweetAlert container isn't active
         if (typeof triggerCustomSwalNotification === 'function') {
             triggerCustomSwalNotification("Record Saved!", `Successfully committed new entry to ${tableName}.`);
         } else {
@@ -136,6 +169,7 @@ async function dispatchPostRESTRequestHandshake(tableName, fieldsDataMap) {
         return null;
     }
 }
+
 /**
  * Atomic DELETE tracking handle to remove user records inside administration panels frames.
  * @param {string} tableName - Target Airtable base sheet name
