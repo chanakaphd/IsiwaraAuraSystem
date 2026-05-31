@@ -220,11 +220,30 @@ if (!resolvedAirtableRoomId) {
                     const generatedBookingId = "BK-" + Math.floor(100000 + Math.random() * 900000);
                     const generatedGuestId = "GST-" + Math.floor(100000 + Math.random() * 900000);
 
-                    const bookingFieldsPayload = {
-                        "Guest Name": guestNameStr, 
-                        "Room": [resolvedAirtableRoomId], 
-                        "Status": "Pending" 
-                    };
+                    // Find guest record in Airtable cache
+let guestRecordId = null;
+
+if (typeof cacheGuests !== 'undefined' && cacheGuests.length > 0) {
+    const matchedGuest = cacheGuests.find(g =>
+        String(g.fields['Full Name'] || '').trim().toLowerCase() ===
+        guestNameStr.trim().toLowerCase()
+    );
+
+    if (matchedGuest) {
+        guestRecordId = matchedGuest.id;
+    }
+}
+
+// Stop if guest doesn't exist
+if (!guestRecordId) {
+    throw new Error(`Guest not found: ${guestNameStr}`);
+}
+
+const bookingFieldsPayload = {
+    "Guest": [guestRecordId],
+    "Room": [resolvedAirtableRoomId],
+    "Status": "Pending"
+};
 
                     if (resolvedIntroducerRecordId) {
                         bookingFieldsPayload["Introducer"] = [resolvedIntroducerRecordId];
