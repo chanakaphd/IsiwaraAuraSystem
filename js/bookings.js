@@ -155,9 +155,7 @@ if (!resolvedAirtableRoomId) {
     return;
 }
                 
-                // 🧠 INTELLIGENT PARSING: Extracts just "R1" from "R1 (3 Beds Capacity - normal)"
-                const parsedRoomClean = selectedRoomFullText.split(' ')[0].trim();
-                
+                  
                              
                 // 🛡️ CRASH SAFEST FALLBACK
                 if (!resolvedAirtableRoomId) {
