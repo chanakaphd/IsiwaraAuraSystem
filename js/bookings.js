@@ -168,10 +168,26 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                // 1. Capture base room and introducer parameters
-                const selectedRoomId = document.getElementById('bulkIntakeRoomSelect').value;
+                // 1. Capture base room value from selection dropdown
+                const selectedRoomNumberText = document.getElementById('bulkIntakeRoomSelect').value;
+                
+                // 🔍 CACHE REGISTRY LOOKUP: Convert friendly text designation (e.g. "R1") into real Airtable internal record hash ID string
+                let resolvedAirtableRoomId = "";
+                if (typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
+                    const matchedRoomObject = cacheRooms.find(r => r.fields['Room Number'] === selectedRoomNumberText);
+                    if (matchedRoomObject) {
+                        resolvedAirtableRoomId = matchedRoomObject.id; // Yields precise pattern: "recXXXXXXXXXXXX"
+                    }
+                }
+                
+                if (!resolvedAirtableRoomId) {
+                    alert("Allocation Halted: Selected spatial room frame could not be resolved within synchronized memory caches.");
+                    return;
+                }
+
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
                 
+                // 🔐 FIXED SCOPE VISIBILITY: Initialized outside of condition boundaries so it remains visible inside downstream guest iterations loops
                 let selectedIntroducerName = "Direct Walk-In";
                 if (introducerType === 'Existing') {
                     selectedIntroducerName = document.getElementById('bulkIntakeIntroducerSelect').value;
@@ -181,9 +197,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     // On-the-fly registration backup hook
                     if (typeof dispatchPostRESTRequestHandshake === 'function' && selectedIntroducerName) {
                         await dispatchPostRESTRequestHandshake('Introducers', {
-                            "Full Legal Name": selectedIntroducerName,
-                            "NIC Number Code": document.getElementById('newIntroNIC').value.trim(),
-                            "Physical Address Line Location": document.getElementById('newIntroAddress').value.trim()
+                            "Full Name": selectedIntroducerName,
+                            "Calling Name": selectedIntroducerName.split(' ')[0] || 'Partner',
+                            "NIC Number": document.getElementById('newIntroNIC').value.trim(),
+                            "Address": document.getElementById('newIntroAddress').value.trim()
                         });
                     }
                 }
@@ -213,17 +230,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (!nameField) continue;
                     
                     const guestNameStr = nameField.value.trim();
+                    if (!guestNameStr) continue;
+                    
                     const packagePriceNum = priceField ? parseFloat(priceField.value) || 0 : 0;
                     
                     // Unique transaction code generation parameters
                     const generatedBookingId = "BK-" + Math.floor(100000 + Math.random() * 900000);
                     const generatedGuestId = "GST-" + Math.floor(100000 + Math.random() * 900000);
 
+                    // 🧠 RELATIONAL HANDSHAKE MAPPING: Passing structural array mapping array pointers cleanly
                     const bookingFieldsPayload = {
                         "Booking ID": generatedBookingId,
                         "Guest Name": guestNameStr,
                         "Total Package Price": packagePriceNum,
-                        "Room Unit Link": [selectedRoomId], // Linked field arrays wrap
+                        "Room Unit Link": [resolvedAirtableRoomId], // ✅ FIXES 422 ERRS: Passes strict relational alphanumeric record references
                         "Introducer": selectedIntroducerName,
                         "Status": "IN_PROGRESS"
                     };
@@ -256,7 +276,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (typeof safeCloseModal === 'function') {
                     safeCloseModal('bulkIntakeModal');
                 } else {
-                    // Bootstrap fallback wrapper support if structural functions are out of scope
                     const modalElement = document.getElementById('bulkIntakeModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalElement);
                     if (modalInstance) modalInstance.hide();
