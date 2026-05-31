@@ -141,3 +141,15 @@ function renderSystemAllocationQRGraphicNode(domElementId, bookingId) {
         targetElement.innerText = "QR Generation Engine Failed. Check CDN Link.";
     }
 }
+/**
+ * Toggles POS intake interface labels dynamically based on calculation requirements
+ */
+function toggleCommissionAddonLabel() {
+    const type = document.getElementById('intakeCommType').value;
+    const label = document.getElementById('lblCommValue');
+    if (label) {
+        label.innerText = type === 'LKR' 
+            ? 'Commission Value Allocation (රු.)' 
+            : 'Commission Percentage Split Rate (%)';
+    }
+}
