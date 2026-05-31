@@ -70,7 +70,7 @@ async function fetchAndRenderMasterScheduleView() {
         if(document.getElementById('boxMtdGuests')) document.getElementById('boxMtdGuests').innerText = mtdUniqueGuestProfileSet.size;
         if(document.getElementById('boxMtdTxCount')) document.getElementById('boxMtdTxCount').innerText = mtdLedgerRecords.length;
         if(document.getElementById('boxMtdUtilRate')) document.getElementById('boxMtdUtilRate').innerText = `${computedUtilizationPercentage}%`;
-        if(document.getElementById('boxMtdIntCount')) document.getElementById('boxMtdIntCount').innerText = cacheIntroducers.length;
+        if(document.getElementById('boxMtdIntCount')) document.getElementById('boxMtdIntCount').innerText = typeof cacheIntroducers !== 'undefined' ? cacheIntroducers.length : 0;
         if(document.getElementById('boxMtdPaidComm')) document.getElementById('boxMtdPaidComm').innerText = `රු. ${mtdTotalCommissionsPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
         // 6. Build the master operations records history list rows
@@ -112,7 +112,6 @@ async function fetchAndRenderMasterScheduleView() {
  * Secure QR Verification Node Injection Pipeline
  */
 function generateSecureBookingTreatmentQRToken(bookingId, baseDomainUrl = "https://chanakaphd.github.io/IsiwaraAuraSystem") {
-    // Generate simple verification checksum signature to append onto routing nodes
     const safetySalt = "IsiwaraAuraSystemStructuralSecret2026";
     const verificationChecksum = btoa(`${bookingId}:${safetySalt}`).substring(0, 12);
     
@@ -125,7 +124,7 @@ function renderSystemAllocationQRGraphicNode(domElementId, bookingId) {
     const targetElement = document.getElementById(domElementId);
     if (!targetElement) return;
     
-    targetElement.innerHTML = ""; // Purge prior frame
+    targetElement.innerHTML = ""; 
     const payloadUrl = generateSecureBookingTreatmentQRToken(bookingId);
     
     try {
@@ -157,8 +156,8 @@ function toggleCommissionAddonLabel() {
 }
 
 /**
- * ⚡ INJECTED: Master Form Submission Event Interceptor
- * Safely aggregates client split arrays, calculates basis splits, and logs allocations.
+ * ⚡ FIXED MASTER POS TRACK ENGINE
+ * Safely aggregates client split arrays, resolves underlying lookup hashes, and processes commitments.
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -168,33 +167,31 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                // 1. Capture base room value from selection dropdown
+                // 1. Convert human-readable target selector string (e.g., "R1") into its internal record string hash index ("recXXXX")
                 const selectedRoomNumberText = document.getElementById('bulkIntakeRoomSelect').value;
-                
-                // 🔍 CACHE REGISTRY LOOKUP: Convert friendly text designation (e.g. "R1") into real Airtable internal record hash ID string
                 let resolvedAirtableRoomId = "";
+                
                 if (typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
                     const matchedRoomObject = cacheRooms.find(r => r.fields['Room Number'] === selectedRoomNumberText);
                     if (matchedRoomObject) {
-                        resolvedAirtableRoomId = matchedRoomObject.id; // Yields precise pattern: "recXXXXXXXXXXXX"
+                        resolvedAirtableRoomId = matchedRoomObject.id; 
                     }
                 }
                 
                 if (!resolvedAirtableRoomId) {
-                    alert("Allocation Halted: Selected spatial room frame could not be resolved within synchronized memory caches.");
+                    alert("Allocation Halted: The spatial room assignment parameters could not be reconciled in localized data memory registries.");
                     return;
                 }
 
+                // 2. Establish safe partner scope parameters inherited safely down out of block contexts
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
-                
-                // 🔐 FIXED SCOPE VISIBILITY: Initialized outside of condition boundaries so it remains visible inside downstream guest iterations loops
                 let selectedIntroducerName = "Direct Walk-In";
+                
                 if (introducerType === 'Existing') {
                     selectedIntroducerName = document.getElementById('bulkIntakeIntroducerSelect').value;
                 } else if (introducerType === 'New') {
                     selectedIntroducerName = document.getElementById('newIntroFullName').value.trim();
                     
-                    // On-the-fly registration backup hook
                     if (typeof dispatchPostRESTRequestHandshake === 'function' && selectedIntroducerName) {
                         await dispatchPostRESTRequestHandshake('Introducers', {
                             "Full Name": selectedIntroducerName,
@@ -205,55 +202,49 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                // 2. Fetch commission input types and basis values safely
                 const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
                 const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
 
-                // 3. Process dynamic guest rows collection loop
-                const dynamicGuestContainers = document.querySelectorAll('.dynamic-guest-row');
-                
-                // Fallback support if your container rows are structured with different selector names
-                const activeRows = dynamicGuestContainers.length > 0 
-                    ? dynamicGuestContainers 
+                // 3. Collect active transactional guest grid splitting lines
+                const activeRows = document.querySelectorAll('.dynamic-guest-row').length > 0 
+                    ? document.querySelectorAll('.dynamic-guest-row') 
                     : document.querySelectorAll('#dynamic-guests-rows-container .row');
 
                 if (activeRows.length === 0) {
-                    alert("Allocation Aborted: You must append at least one active guest row to execute processing.");
+                    alert("Allocation Aborted: Form terminal expects at least one valid row allocation frame.");
                     return;
                 }
 
-                // Loop through and compile data records onto cloud indexes
+                // 4. Thread Loop Handshake Pipeline execution
                 for (let container of activeRows) {
                     const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
                     const priceField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
                     
                     if (!nameField) continue;
-                    
                     const guestNameStr = nameField.value.trim();
                     if (!guestNameStr) continue;
                     
                     const packagePriceNum = priceField ? parseFloat(priceField.value) || 0 : 0;
                     
-                    // Unique transaction code generation parameters
+                    // Generate pseudo-sequential hashes for records mapping
                     const generatedBookingId = "BK-" + Math.floor(100000 + Math.random() * 900000);
                     const generatedGuestId = "GST-" + Math.floor(100000 + Math.random() * 900000);
 
-                    // 🧠 RELATIONAL HANDSHAKE MAPPING: Passing structural array mapping array pointers cleanly
+                    // Compile precise tracking blueprint data objects matching Airtable column mappings exactly
                     const bookingFieldsPayload = {
-                        "Booking ID": generatedBookingId,
+                        "Booking ID": generatedBookingId, // ✅ Bypasses 422: Ensure column type is set to 'Single line text' in Airtable!
                         "Guest Name": guestNameStr,
                         "Total Package Price": packagePriceNum,
-                        "Room Unit Link": [resolvedAirtableRoomId], // ✅ FIXES 422 ERRS: Passes strict relational alphanumeric record references
+                        "Room Unit Link": [resolvedAirtableRoomId], // Secure array assignment pointer layout
                         "Introducer": selectedIntroducerName,
                         "Status": "IN_PROGRESS"
                     };
 
-                    // Commit records via our restored API handshake pipeline
                     if (typeof dispatchPostRESTRequestHandshake === 'function') {
                         await dispatchPostRESTRequestHandshake('Bookings', bookingFieldsPayload);
                     }
 
-                    // 4. Fire the dynamic introducer incentive engine tracking updates safely if partner linked
+                    // Log commission record parameters if partner channel exists
                     if (introducerType !== 'Direct' && window.introducerIncentiveEngine) {
                         window.introducerIncentiveEngine.createIntroducerRecord(
                             generatedBookingId,
@@ -266,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                // 5. Success UI cleanup operations
+                // 5. Success cleanup phase operations
                 if (typeof triggerCustomSwalNotification === 'function') {
                     triggerCustomSwalNotification("POS Engine Clear", "Universal bulk intake balances split and allocated safely.", "success");
                 } else {
@@ -286,7 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             } catch (executionError) {
                 console.error("Critical crash halted bulk processing loop:", executionError);
-                alert("System Alignment Clash: Bulk intake failed due to missing configuration mapping targets.");
+                alert("System Alignment Clash: Process failed due to unexpected field matrix rejection.");
             }
         };
     }
