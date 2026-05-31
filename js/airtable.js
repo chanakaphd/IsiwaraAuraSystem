@@ -86,21 +86,24 @@ async function fetchAirtableTableRecords(tableWithParams) {
 /**
  * Executes a partial PATCH request to mutate parameters of an existing row.
  * Used for updating introducer disbursements, rolling back day-locks, and patching guest records.
- * @param {string} tableName - Target table index matching system keys string
- * @param {string} recordId - Target Airtable alpha-numeric internal unique record ID string
- * @param {Object} fieldsDataMap - Fields map holding values blocks to overwrite
- * @returns {Object} Mutated transaction result object framework map
+/**
+ * Global Airtable API Async REST POST Request Handler
+ * Packages raw field records and commits them securely to cloud tables
+ * @param {string} tableName - Target base table sheet name
+ * @param {Object} fieldsDataMap - Key-value pair payload map matching Airtable columns
+ * @returns {Object|null} The committed Airtable record object or null on failure
  */
-async function dispatchPatchRESTRequestHandshake(tableName, recordId, fieldsDataMap) {
+async function dispatchPostRESTRequestHandshake(tableName, fieldsDataMap) {
     if (!AIRTABLE_API_KEY || !BASE_ID) {
-        console.warn(`Local Proxy Simulation Overwrite patch processed for table field lines: [${tableName}]`);
-        return { id: recordId, fields: fieldsDataMap };
+        console.warn(`Local Proxy Simulation: POST request bypassed for table [${tableName}]`);
+        return null;
     }
 
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(tableName)}/${recordId}`;
+    const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(tableName)}`;
+    
     try {
         const response = await fetch(url, {
-            method: 'PATCH',
+            method: 'POST',
             headers: {
                 'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
                 'Content-Type': 'application/json'
@@ -109,17 +112,30 @@ async function dispatchPatchRESTRequestHandshake(tableName, recordId, fieldsData
         });
 
         if (!response.ok) {
-            const errBody = await response.text();
-            throw new Error(`PATCH exception thrown with status ${response.status}: ${errBody}`);
+            const errDetails = await response.text();
+            console.error(`Airtable Server Rejected POST [${response.status}]:`, errDetails);
+            alert(`Database Error [${response.status}]: Server rejected entry commitment.`);
+            return null;
         }
 
-        return await response.json();
-    } catch (ex) {
-        console.error(`REST field alteration thread dropped on target record ID [${recordId}] inside [${tableName}]:`, ex);
-        throw ex;
+        const standardResult = await response.json();
+        console.log(`✅ Record successfully committed to Airtable table [${tableName}]:`, standardResult.id);
+        
+        // Trigger native alert backup if the custom SweetAlert container isn't active
+        if (typeof triggerCustomSwalNotification === 'function') {
+            triggerCustomSwalNotification("Record Saved!", `Successfully committed new entry to ${tableName}.`);
+        } else {
+            alert(`Success!\nNew record successfully saved into the ${tableName} matrix.`);
+        }
+
+        return standardResult;
+
+    } catch (networkError) {
+        console.error(`Critical exception dropped during POST handshake on [${tableName}]:`, networkError);
+        alert("Network Timeout: Communication with Airtable data streams broken.");
+        return null;
     }
 }
-
 /**
  * Atomic DELETE tracking handle to remove user records inside administration panels frames.
  * @param {string} tableName - Target Airtable base sheet name
