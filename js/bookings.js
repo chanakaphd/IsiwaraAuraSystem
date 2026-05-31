@@ -284,9 +284,10 @@ const bookingFieldsPayload = {
                 }
 
             } catch (executionError) {
-                console.error("Critical crash halted bulk processing loop:", executionError);
-                alert("System Alignment Clash: Process failed due to unexpected field matrix rejection.");
-            }
-        };
-    }
+    console.error("FULL ERROR:", executionError);
+    alert(
+        executionError.message ||
+        JSON.stringify(executionError)
+    );
+}
 });
