@@ -67,11 +67,11 @@ async function fetchAndRenderMasterScheduleView() {
         }
 
         // 5. Inject Metric Card data values safely into indexed summary boxes
-        document.getElementById('boxMtdGuests').innerText = mtdUniqueGuestProfileSet.size;
-        document.getElementById('boxMtdTxCount').innerText = mtdLedgerRecords.length;
-        document.getElementById('boxMtdUtilRate').innerText = `${computedUtilizationPercentage}%`;
-        document.getElementById('boxMtdIntCount').innerText = cacheIntroducers.length;
-        document.getElementById('boxMtdPaidComm').innerText = `රු. ${mtdTotalCommissionsPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        if(document.getElementById('boxMtdGuests')) document.getElementById('boxMtdGuests').innerText = mtdUniqueGuestProfileSet.size;
+        if(document.getElementById('boxMtdTxCount')) document.getElementById('boxMtdTxCount').innerText = mtdLedgerRecords.length;
+        if(document.getElementById('boxMtdUtilRate')) document.getElementById('boxMtdUtilRate').innerText = `${computedUtilizationPercentage}%`;
+        if(document.getElementById('boxMtdIntCount')) document.getElementById('boxMtdIntCount').innerText = cacheIntroducers.length;
+        if(document.getElementById('boxMtdPaidComm')) document.getElementById('boxMtdPaidComm').innerText = `රු. ${mtdTotalCommissionsPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
         // 6. Build the master operations records history list rows
         tableBody.innerHTML = activeBookings.map(booking => {
@@ -107,6 +107,7 @@ async function fetchAndRenderMasterScheduleView() {
         tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center fw-bold py-3">⚠️ Network Communication Timeout: Failed to compile master schedule data maps from Airtable.</td></tr>`;
     }
 }
+
 /**
  * Secure QR Verification Node Injection Pipeline
  */
@@ -141,6 +142,7 @@ function renderSystemAllocationQRGraphicNode(domElementId, bookingId) {
         targetElement.innerText = "QR Generation Engine Failed. Check CDN Link.";
     }
 }
+
 /**
  * Toggles POS intake interface labels dynamically based on calculation requirements
  */
@@ -153,3 +155,120 @@ function toggleCommissionAddonLabel() {
             : 'Commission Percentage Split Rate (%)';
     }
 }
+
+/**
+ * ⚡ INJECTED: Master Form Submission Event Interceptor
+ * Safely aggregates client split arrays, calculates basis splits, and logs allocations.
+ */
+document.addEventListener("DOMContentLoaded", () => {
+    const bulkIntakeForm = document.getElementById('bulkIntakeForm');
+    if (bulkIntakeForm) {
+        bulkIntakeForm.onsubmit = async (e) => {
+            e.preventDefault();
+            console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
+
+            try {
+                // 1. Capture base room and introducer parameters
+                const selectedRoomId = document.getElementById('bulkIntakeRoomSelect').value;
+                const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
+                
+                let selectedIntroducerName = "Direct Walk-In";
+                if (introducerType === 'Existing') {
+                    selectedIntroducerName = document.getElementById('bulkIntakeIntroducerSelect').value;
+                } else if (introducerType === 'New') {
+                    selectedIntroducerName = document.getElementById('newIntroFullName').value.trim();
+                    
+                    // On-the-fly registration backup hook
+                    if (typeof dispatchPostRESTRequestHandshake === 'function' && selectedIntroducerName) {
+                        await dispatchPostRESTRequestHandshake('Introducers', {
+                            "Full Legal Name": selectedIntroducerName,
+                            "NIC Number Code": document.getElementById('newIntroNIC').value.trim(),
+                            "Physical Address Line Location": document.getElementById('newIntroAddress').value.trim()
+                        });
+                    }
+                }
+
+                // 2. Fetch commission input types and basis values safely
+                const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
+                const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
+
+                // 3. Process dynamic guest rows collection loop
+                const dynamicGuestContainers = document.querySelectorAll('.dynamic-guest-row');
+                
+                // Fallback support if your container rows are structured with different selector names
+                const activeRows = dynamicGuestContainers.length > 0 
+                    ? dynamicGuestContainers 
+                    : document.querySelectorAll('#dynamic-guests-rows-container .row');
+
+                if (activeRows.length === 0) {
+                    alert("Allocation Aborted: You must append at least one active guest row to execute processing.");
+                    return;
+                }
+
+                // Loop through and compile data records onto cloud indexes
+                for (let container of activeRows) {
+                    const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
+                    const priceField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
+                    
+                    if (!nameField) continue;
+                    
+                    const guestNameStr = nameField.value.trim();
+                    const packagePriceNum = priceField ? parseFloat(priceField.value) || 0 : 0;
+                    
+                    // Unique transaction code generation parameters
+                    const generatedBookingId = "BK-" + Math.floor(100000 + Math.random() * 900000);
+                    const generatedGuestId = "GST-" + Math.floor(100000 + Math.random() * 900000);
+
+                    const bookingFieldsPayload = {
+                        "Booking ID": generatedBookingId,
+                        "Guest Name": guestNameStr,
+                        "Total Package Price": packagePriceNum,
+                        "Room Unit Link": [selectedRoomId], // Linked field arrays wrap
+                        "Introducer": selectedIntroducerName,
+                        "Status": "IN_PROGRESS"
+                    };
+
+                    // Commit records via our restored API handshake pipeline
+                    if (typeof dispatchPostRESTRequestHandshake === 'function') {
+                        await dispatchPostRESTRequestHandshake('Bookings', bookingFieldsPayload);
+                    }
+
+                    // 4. Fire the dynamic introducer incentive engine tracking updates safely if partner linked
+                    if (introducerType !== 'Direct' && window.introducerIncentiveEngine) {
+                        window.introducerIncentiveEngine.createIntroducerRecord(
+                            generatedBookingId,
+                            generatedGuestId,
+                            selectedIntroducerName,
+                            packagePriceNum,
+                            commissionBasisType,
+                            commissionInputAmount
+                        );
+                    }
+                }
+
+                // 5. Success UI cleanup operations
+                if (typeof triggerCustomSwalNotification === 'function') {
+                    triggerCustomSwalNotification("POS Engine Clear", "Universal bulk intake balances split and allocated safely.", "success");
+                } else {
+                    alert("Success! Universal bulk intake balances split and allocated safely.");
+                }
+
+                if (typeof safeCloseModal === 'function') {
+                    safeCloseModal('bulkIntakeModal');
+                } else {
+                    // Bootstrap fallback wrapper support if structural functions are out of scope
+                    const modalElement = document.getElementById('bulkIntakeModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) modalInstance.hide();
+                }
+                
+                bulkIntakeForm.reset();
+                await fetchAndRenderMasterScheduleView();
+
+            } catch (executionError) {
+                console.error("Critical crash halted bulk processing loop:", executionError);
+                alert("System Alignment Clash: Bulk intake failed due to missing configuration mapping targets.");
+            }
+        };
+    }
+});
