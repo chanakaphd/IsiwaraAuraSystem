@@ -219,23 +219,28 @@ if (!resolvedAirtableRoomId) {
                     const generatedGuestId = "GST-" + Math.floor(100000 + Math.random() * 900000);
 
                     // Find guest record in Airtable cache
-let guestRecordId = null;
+// Query Guests table directly
+const guestList = await fetchAirtableTableRecords('Guests');
 
-if (typeof cacheGuests !== 'undefined' && cacheGuests.length > 0) {
-    const matchedGuest = cacheGuests.find(g =>
-        String(g.fields['Full Name'] || '').trim().toLowerCase() ===
-        guestNameStr.trim().toLowerCase()
+let matchedGuest = guestList.find(g =>
+    String(g.fields['Full Name'] || '').trim().toLowerCase() ===
+    guestNameStr.trim().toLowerCase()
+);
+
+// Create guest automatically if not found
+if (!matchedGuest) {
+
+    matchedGuest = await dispatchPostRESTRequestHandshake(
+        'Guests',
+        {
+            "Full Name": guestNameStr
+        }
     );
 
-    if (matchedGuest) {
-        guestRecordId = matchedGuest.id;
-    }
+    console.log("New guest created:", matchedGuest);
 }
 
-// Stop if guest doesn't exist
-if (!guestRecordId) {
-    throw new Error(`Guest not found: ${guestRecordId}`);
-}
+const guestRecordId = matchedGuest.id;
 
 const bookingFieldsPayload = {
     "Guest": [guestRecordId],
@@ -290,4 +295,6 @@ const bookingFieldsPayload = {
         JSON.stringify(executionError)
     );
 }
+        };
+    }
 });
