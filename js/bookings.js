@@ -147,23 +147,18 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
+                const resolvedAirtableRoomId =
+document.getElementById('bulkIntakeRoomSelect').value;
+
+if (!resolvedAirtableRoomId) {
+    alert("No room selected.");
+    return;
+}
                 
                 // 🧠 INTELLIGENT PARSING: Extracts just "R1" from "R1 (3 Beds Capacity - normal)"
                 const parsedRoomClean = selectedRoomFullText.split(' ')[0].trim();
                 
-                let resolvedAirtableRoomId = "";
-                
-                if (typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
-                    const matchedRoomObject = cacheRooms.find(r => {
-                        const dbRoomNum = String(r.fields['Room Number'] || '').trim();
-                        return dbRoomNum === parsedRoomClean || dbRoomNum === selectedRoomFullText;
-                    });
-                    if (matchedRoomObject) {
-                        resolvedAirtableRoomId = matchedRoomObject.id; 
-                    }
-                }
-                
+                             
                 // 🛡️ CRASH SAFEST FALLBACK
                 if (!resolvedAirtableRoomId) {
                     console.warn("Cache match failed. Attempting immediate verification proxy...");
