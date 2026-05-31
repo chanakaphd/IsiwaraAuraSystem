@@ -37,21 +37,20 @@ async function showAdminSubTab(subTab) {
         const listBody = document.getElementById('lbl-admin-tx-list');
         listBody.innerHTML = cacheTreatments.map(t => `
             <tr class="animate-fade-in">
-                <td><strong>${t.fields['Treatment Name']}</strong></td>
-                <td>⏱️ ${t.fields['Duration in Minutes']} mins</td>
+                <td><strong>${t.fields['Treatment Name'] || 'Unnamed'}</strong></td>
+                <td>⏱️ ${t.fields['Duration in Minutes'] || '0'} mins</td>
                 <td class="fw-bold text-success">රු. ${(t.fields['Price'] || 0).toLocaleString()}</td>
             </tr>
         `).join('') || '<tr><td colspan="3" class="text-center text-muted py-2">No treatments synced from database.</td></tr>';
         
-        // Safety Wrapper bound element check to prevent startup execution freeze context drops
         const treatmentForm = document.getElementById('treatmentForm');
         if (treatmentForm) {
             treatmentForm.onsubmit = async (e) => {
                 e.preventDefault();
                 const fields = { 
                     "Treatment Name": document.getElementById('newTreatmentName').value.trim(), 
-                    "Price": parseFloat(document.getElementById('newTreatmentPrice').value), 
-                    "Duration in Minutes": parseInt(document.getElementById('newTreatmentDuration').value, 10) 
+                    "Price": parseFloat(document.getElementById('newTreatmentPrice').value) || 0, 
+                    "Duration in Minutes": parseInt(document.getElementById('newTreatmentDuration').value, 10) || 60
                 };
                 await dispatchPostRESTRequestHandshake('Treatments', fields); 
                 safeCloseModal('addTreatmentModal'); 
@@ -82,7 +81,7 @@ async function showAdminSubTab(subTab) {
         const listBody = document.getElementById('lbl-admin-th-list');
         listBody.innerHTML = cacheTherapists.map(s => `
             <tr class="animate-fade-in">
-                <td><strong>👤 ${s.fields['Name']}</strong></td>
+                <td><strong>👤 ${s.fields['Name'] || 'Unnamed'}</strong></td>
                 <td><span class="badge bg-light text-dark border">${s.fields['Specialty'] || 'General Practice'}</span></td>
                 <td><span class="badge bg-success">${s.fields['Availability Status'] || 'Available'}</span></td>
             </tr>
@@ -138,13 +137,15 @@ async function showAdminSubTab(subTab) {
                 const res = await fetchAirtableTableRecords('Users');
                 listBody.innerHTML = (res || []).map(u => `
                     <tr class="animate-fade-in">
-                        <td><strong>${u.fields['Username']}</strong></td>
+                        <td><strong>${u.fields['Username'] || 'N/A'}</strong></td>
                         <td>${u.fields['Full Name'] || 'Not Provided'}</td>
                         <td><span class="badge bg-success">${u.fields['Role'] || 'Staff User'}</span></td>
                         <td><button class="btn btn-xs btn-outline-danger py-0 font-monospace fw-bold" style="font-size:11px;" onclick="revokeUserAccessAuthenticationRecord('${u.id}')">✕ Revoke Access</button></td>
                     </tr>
                 `).join('') || '<tr><td colspan="4" class="text-center text-muted">No security profiles logged.</td></tr>';
-            } catch(e) { listBody.innerHTML = `<tr><td colspan="4" class="text-danger text-center">Failed to sync security table rows.</td></tr>`; }
+            } catch(e) { 
+                listBody.innerHTML = `<tr><td colspan="4" class="text-danger text-center">Failed to sync security table rows.</td></tr>`; 
+            }
         }
         
         const userForm = document.getElementById('userForm');
@@ -170,7 +171,7 @@ async function showAdminSubTab(subTab) {
     }
     
     // ----------------------------------------------------
-    // SUB-TAB MODULE WRAPPER: SPATIAL ROOM ZONING MATRIX
+    // SUB-TAB MODULE WRAPPER: SPATIAL ROOM ZONING MATRIX (FIXED WRAPPER)
     // ----------------------------------------------------
     else if (subTab === 'rooms') {
         content.innerHTML = `
@@ -189,19 +190,19 @@ async function showAdminSubTab(subTab) {
         const listBody = document.getElementById('lbl-admin-rm-list');
         listBody.innerHTML = cacheRooms.map(r => `
             <tr class="animate-fade-in">
-                <td>🚪 <strong>Unit: ${r.fields['Room Number']}</strong></td>
-                <td>${r.fields['Beds Count']} Bed Lines Capacity</td>
-                <td><span class="badge bg-light text-dark border">${r.fields['Room Type']}</span></td>
+                <td>🚪 <strong>Unit: ${r.fields['Room Number'] || 'N/A'}</strong></td>
+                <td>${r.fields['Beds Count'] || '0'} Bed Lines Capacity</td>
+                <td><span class="badge bg-light text-dark border">${r.fields['Room Type'] || 'normal'}</span></td>
             </tr>
         `).join('') || '<tr><td colspan="3" class="text-center text-muted py-2">No physical spaces initialized.</td></tr>';
         
-       const roomForm = document.getElementById('roomForm');
+        const roomForm = document.getElementById('roomForm');
         if (roomForm) {
             roomForm.onsubmit = async (e) => {
                 e.preventDefault();
                 const fields = { 
                     "Room Number": document.getElementById('newRoomNumber').value.trim(), 
-                    "Beds Count": parseInt(document.getElementById('newRoomBeds').value, 10), 
+                    "Beds Count": parseInt(document.getElementById('newRoomBeds').value, 10) || 1, 
                     "Room Type": document.getElementById('newRoomType').value,
                     "Status": "Available"
                 };
@@ -213,6 +214,7 @@ async function showAdminSubTab(subTab) {
                 roomForm.reset();
             };
         }
+    } // 🌟 FIXED: Added missing block closing token brace here!
     
     // ----------------------------------------------------
     // SUB-TAB MODULE WRAPPER: INTRODUCERS PARTNERS CONTRACTS
@@ -234,7 +236,7 @@ async function showAdminSubTab(subTab) {
         const listBody = document.getElementById('lbl-admin-intro-list');
         listBody.innerHTML = cacheIntroducers.map(i => `
             <tr class="animate-fade-in">
-                <td>👤 <strong>${i.fields['Full Name']}</strong></td>
+                <td>👤 <strong>${i.fields['Full Name'] || 'Unnamed'}</strong></td>
                 <td>${i.fields['Calling Name'] || 'N/A'}</td>
                 <td>${i.fields['NIC Number'] || 'N/A'}</td>
                 <td><small class="text-secondary">${i.fields['Address'] || 'Not Stated'}</small></td>
@@ -245,9 +247,10 @@ async function showAdminSubTab(subTab) {
         if (introForm) {
             introForm.onsubmit = async (e) => {
                 e.preventDefault();
+                const fullNameVal = document.getElementById('adminIntroFullName').value.trim();
                 const fields = { 
-                    "Full Name": document.getElementById('adminIntroFullName').value.trim(), 
-                    "Calling Name": document.getElementById('adminIntroFullName').value.trim().split(' ')[0], 
+                    "Full Name": fullNameVal, 
+                    "Calling Name": fullNameVal.split(' ')[0] || 'Partner', 
                     "NIC Number": document.getElementById('adminIntroNIC').value.trim(), 
                     "Address": document.getElementById('adminIntroAddress').value.trim() 
                 };
@@ -280,9 +283,6 @@ async function showAdminSubTab(subTab) {
     // SUB-TAB MODULE WRAPPER: DYNAMIC API CO-METADATA PROFILE PARAMETERS
     // ----------------------------------------------------
     else if (subTab === 'system') {
-        const currentApiKey = (typeof AIRTABLE_API_KEY !== 'undefined') ? AIRTABLE_API_KEY : '';
-        const currentBaseId = (typeof BASE_ID !== 'undefined') ? BASE_ID : '';
-        
         content.innerHTML = `
             <h5 class="fw-bold text-success mb-1">System Core Parameter Handshake Endpoints</h5>
             <p class="text-muted small">Configurations saved locally inside browser cache arrays to drive silent background REST queries loops.</p><hr>
@@ -297,7 +297,7 @@ async function showAdminSubTab(subTab) {
             <button class="btn btn-sm btn-primary mt-2 fw-bold" onclick="saveSystemSettingsFromAdmin()">Commit Parameters Overwrites</button>
         `;
     }
-}
+} // 🌟 FIXED: Added missing function terminal closing block here!
 
 /**
  * Destroys credentials records permanently out from Airtable table rows indices.
@@ -315,5 +315,7 @@ async function revokeUserAccessAuthenticationRecord(userRowId) {
                 showAdminSubTab('users');
             }
         }
-    } catch(err) { alert("Access violation: Execution intercept dropped deletion sequence."); }
+    } catch(err) { 
+        alert("Access violation: Execution intercept dropped deletion sequence."); 
+    }
 }
