@@ -107,3 +107,37 @@ async function fetchAndRenderMasterScheduleView() {
         tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center fw-bold py-3">⚠️ Network Communication Timeout: Failed to compile master schedule data maps from Airtable.</td></tr>`;
     }
 }
+/**
+ * Secure QR Verification Node Injection Pipeline
+ */
+function generateSecureBookingTreatmentQRToken(bookingId, baseDomainUrl = "https://chanakaphd.github.io/IsiwaraAuraSystem") {
+    // Generate simple verification checksum signature to append onto routing nodes
+    const safetySalt = "IsiwaraAuraSystemStructuralSecret2026";
+    const verificationChecksum = btoa(`${bookingId}:${safetySalt}`).substring(0, 12);
+    
+    const targetPayloadUrl = `${baseDomainUrl}/treatment-info.html?bookingId=${encodeURIComponent(bookingId)}&tokenVerificationSig=${verificationChecksum}`;
+    console.log(`QR Communication Endpoint Compiled: ${targetPayloadUrl}`);
+    return targetPayloadUrl;
+}
+
+function renderSystemAllocationQRGraphicNode(domElementId, bookingId) {
+    const targetElement = document.getElementById(domElementId);
+    if (!targetElement) return;
+    
+    targetElement.innerHTML = ""; // Purge prior frame
+    const payloadUrl = generateSecureBookingTreatmentQRToken(bookingId);
+    
+    try {
+        new QRCode(targetElement, {
+            text: payloadUrl,
+            width: 140,
+            height: 140,
+            colorDark: "#1e4620",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    } catch (qrException) {
+        console.error("QR Execution Halt: Dependency library missing inside global script pool.", qrException);
+        targetElement.innerText = "QR Generation Engine Failed. Check CDN Link.";
+    }
+}
