@@ -330,17 +330,18 @@
 
    <!-- Core Infrastructures (MUST LOAD IN THIS EXACT SEQUENTIAL ORDER) -->
     <script src="js/config.js"></script>
-    <script src="js/system_config.js"></script>  <!-- 1st: Handles saving/loading engine -->
+    <script src="js/system_config.js"></script>
     <script src="js/utilities.js"></script>
-    <script src="js/airtable.js"></script>       <!-- 2nd: Runs the background fetch queries -->
-    <script src="js/auth.js"></script>           <!-- 3rd: Manages login gates -->
+    <script src="js/airtable.js"></script>
+    <script src="js/auth.js"></script>
 
-    <!-- Functional Modules -->
+    <script src="js/manage.js"></script>
+    <script src="js/steamQueue.js"></script>
+    <script src="js/introducer.js"></script>
+    <script src="js/dashboard.js"></script>
+
     <script src="js/bookings.js"></script>
     <script src="js/manage.js"></script>
     <script src="js/financials.js"></script>
-    <script src="js/guests.js"></script>
-    <script src="js/reports.js"></script>
-    <script src="js/admin.js"></script>
 </body>
 </html>
