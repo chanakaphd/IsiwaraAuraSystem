@@ -83,8 +83,8 @@ async function fetchAndRenderMasterScheduleView() {
                 'රු. 0.00';
 
             const allocatedRoomLabel = fields['Room Number']?.[0] || 'Standard Treatment Room';
-            const introducerContextLabel = fields['Introducer'] || 'Direct Walk-In';
-            const currentOperationalStatus = fields['Status'] || 'Confirmed';
+            const introducerContextLabel = fields['Room Number']?.[1] || 'Direct Walk-In'; // Adjusted lookup safe link references
+            const currentOperationalStatus = fields['Status'] || 'Pending';
 
             return `
                 <tr class="animate-fade-in">
@@ -155,8 +155,7 @@ function toggleCommissionAddonLabel() {
 }
 
 /**
- * ⚡ FIXED MASTER POS TRACK ENGINE
- * Safely aggregates client split arrays, resolves underlying lookup hashes, and processes commitments.
+ * ⚡ MASTER POS TRACK ENGINE - FIXED WITH PRECISE COLUMNS ALIGNMENT
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -166,7 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                // 1. Convert friendly designation (e.g., "R1") into its internal record string hash index ("recXXXX")
+                // 1. Convert Room name selection into its true Record ID string
                 const selectedRoomNumberText = document.getElementById('bulkIntakeRoomSelect').value;
                 let resolvedAirtableRoomId = "";
                 
@@ -178,33 +177,38 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 
                 if (!resolvedAirtableRoomId) {
-                    alert("Allocation Halted: The spatial room assignment parameters could not be reconciled in localized data memory registries.");
+                    alert("Allocation Halted: The spatial room assignment parameters could not be reconciled in localized memory caches.");
                     return;
                 }
 
-                // 2. Establish safe partner scope parameters outside of conditional blocks
+                // 2. Process Introducer Type selection and map record pointers safely
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
                 let selectedIntroducerName = "Direct Walk-In";
+                let resolvedIntroducerRecordId = null; // Stays null if Direct Walk-In
                 
                 if (introducerType === 'Existing') {
                     selectedIntroducerName = document.getElementById('bulkIntakeIntroducerSelect').value;
+                    if (typeof cacheIntroducers !== 'undefined' && cacheIntroducers.length > 0) {
+                        const matchedIntroObj = cacheIntroducers.find(i => i.fields['Full Name'] === selectedIntroducerName);
+                        if (matchedIntroObj) resolvedIntroducerRecordId = matchedIntroObj.id;
+                    }
                 } else if (introducerType === 'New') {
                     selectedIntroducerName = document.getElementById('newIntroFullName').value.trim();
-                    
                     if (typeof dispatchPostRESTRequestHandshake === 'function' && selectedIntroducerName) {
-                        await dispatchPostRESTRequestHandshake('Introducers', {
+                        const newIntroResult = await dispatchPostRESTRequestHandshake('Introducers', {
                             "Full Name": selectedIntroducerName,
                             "Calling Name": selectedIntroducerName.split(' ')[0] || 'Partner',
                             "NIC Number": document.getElementById('newIntroNIC').value.trim(),
                             "Address": document.getElementById('newIntroAddress').value.trim()
                         });
+                        if (newIntroResult) resolvedIntroducerRecordId = newIntroResult.id;
                     }
                 }
 
                 const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
                 const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
 
-                // 3. Collect active transactional guest grid splitting lines
+                // 3. Collect active rows
                 const activeRows = document.querySelectorAll('.dynamic-guest-row').length > 0 
                     ? document.querySelectorAll('.dynamic-guest-row') 
                     : document.querySelectorAll('#dynamic-guests-rows-container .row');
@@ -214,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // 4. Thread Loop Handshake Pipeline execution
+                // 4. Loop and push entries safely
                 for (let container of activeRows) {
                     const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
                     const priceField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
@@ -225,25 +229,26 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     const packagePriceNum = priceField ? parseFloat(priceField.value) || 0 : 0;
                     
-                    // Generate pseudo-sequential hashes for records mapping
                     const generatedBookingId = "BK-" + Math.floor(100000 + Math.random() * 900000);
                     const generatedGuestId = "GST-" + Math.floor(100000 + Math.random() * 900000);
 
-                    // Compile precise tracking blueprint data objects matching Airtable column mappings exactly
+                    // 🧠 PRECISE SCHEMATIC BLUEPRINT: Aligned directly with your explicit column parameters mapping keys
                     const bookingFieldsPayload = {
-                        "Booking ID": generatedBookingId, 
-                        "Guest Name": guestNameStr,
-                        "Total Package Price": packagePriceNum,
-                        "Room Unit Link": [resolvedAirtableRoomId], 
-                        "Introducer": selectedIntroducerName,
-                        "Status": "IN_PROGRESS"
+                        "Guest Name": guestNameStr, // Singles mapping matching text
+                        "Room": [resolvedAirtableRoomId], // ✅ Points to "Room" field using clean link records arrays format
+                        "Status": "Pending" // Set status to match single select options rules
                     };
+
+                    // ✅ Link Introducer array pointer column only if a valid selection exists
+                    if (resolvedIntroducerRecordId) {
+                        bookingFieldsPayload["Introducer"] = [resolvedIntroducerRecordId];
+                    }
 
                     if (typeof dispatchPostRESTRequestHandshake === 'function') {
                         await dispatchPostRESTRequestHandshake('Bookings', bookingFieldsPayload);
                     }
 
-                    // Log commission record parameters if partner channel exists
+                    // Log commission calculations records if channel partner linked
                     if (introducerType !== 'Direct' && window.introducerIncentiveEngine) {
                         window.introducerIncentiveEngine.createIntroducerRecord(
                             generatedBookingId,
@@ -256,7 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                // 5. Success cleanup phase operations
+                // 5. Cleanup operation phases
                 if (typeof triggerCustomSwalNotification === 'function') {
                     triggerCustomSwalNotification("POS Engine Clear", "Universal bulk intake balances split and allocated safely.", "success");
                 } else {
@@ -273,7 +278,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 bulkIntakeForm.reset();
                 
-                // Safety bound check execution to prevent late-linked script order drops
                 if (typeof fetchAndRenderMasterScheduleView === 'function') {
                     await fetchAndRenderMasterScheduleView();
                 }
