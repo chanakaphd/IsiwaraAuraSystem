@@ -171,7 +171,7 @@ async function showAdminSubTab(subTab) {
     }
     
     // ----------------------------------------------------
-    // SUB-TAB MODULE WRAPPER: SPATIAL ROOM ZONING MATRIX (FIXED WRAPPER)
+    // SUB-TAB MODULE WRAPPER: SPATIAL ROOM ZONING MATRIX
     // ----------------------------------------------------
     else if (subTab === 'rooms') {
         content.innerHTML = `
@@ -214,7 +214,7 @@ async function showAdminSubTab(subTab) {
                 roomForm.reset();
             };
         }
-    } // 🌟 FIXED: Added missing block closing token brace here!
+    } 
     
     // ----------------------------------------------------
     // SUB-TAB MODULE WRAPPER: INTRODUCERS PARTNERS CONTRACTS
@@ -297,7 +297,7 @@ async function showAdminSubTab(subTab) {
             <button class="btn btn-sm btn-primary mt-2 fw-bold" onclick="saveSystemSettingsFromAdmin()">Commit Parameters Overwrites</button>
         `;
     }
-} // 🌟 FIXED: Added missing function terminal closing block here!
+}
 
 /**
  * Destroys credentials records permanently out from Airtable table rows indices.
