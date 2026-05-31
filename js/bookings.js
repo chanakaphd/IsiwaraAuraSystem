@@ -137,7 +137,7 @@ function toggleCommissionAddonLabel() {
 }
 
 /**
- * ⚡ MASTER POS TRACK ENGINE (OPTIMIZED REGISTRY SYNC)
+ * ⚡ MASTER POS TRACK ENGINE (FULL TRANSACTIONAL AUTOMATION)
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -154,7 +154,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // Parse room number prefix (e.g. extracts "R1" out from "R1 (3 Beds Capacity)")
                 const parsedRoomClean = selectedRoomFullText.split(' ')[0].trim();
                 let resolvedAirtableRoomId = "";
                 
@@ -168,7 +167,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
                 
-                // Fallback verification proxy safety hook
                 if (!resolvedAirtableRoomId && typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
                     resolvedAirtableRoomId = cacheRooms[0].id; 
                 }
@@ -204,6 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
                 const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
+                const settlementMethodPathway = document.getElementById('bulkSettlementMethodSelect') ? document.getElementById('bulkSettlementMethodSelect').value : 'Cash';
 
                 const activeRows = document.querySelectorAll('.dynamic-guest-row').length > 0 
                     ? document.querySelectorAll('.dynamic-guest-row') 
@@ -214,76 +213,95 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // 🔥 OPTIMIZATION: Pull the entire guest table ONCE outside the loop context 
-                // This prevents rate-limit lockouts during multi-guest entries execution!
-                const guestList = await fetchAirtableTableRecords('Guests');
+                let collectedReceiptItems = [];
 
                 // 3. Process each guest row entry sequentially
                 for (let container of activeRows) {
                     const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
                     const priceField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
+                    const packageSelect = container.querySelector('.package-select-menu') || container.querySelector('select');
                     
                     if (!nameField) continue;
                     const guestNameStr = nameField.value.trim();
                     if (!guestNameStr) continue;
                     
                     const packagePriceNum = priceField ? parseFloat(priceField.value) || 0 : 0;
+                    const chosenPackageName = packageSelect ? packageSelect.value : "Ayurveda Treatment Session";
                     
-                    const generatedBookingId = "BK-" + Math.floor(100000 + Math.random() * 900000);
-                    const generatedGuestId = "GST-" + Math.floor(100000 + Math.random() * 900000);
-
-                    // Search for an existing match in our optimized array container
-                    let matchedGuest = guestList.find(g =>
-                        String(g.fields['Full Name'] || '').trim().toLowerCase() === guestNameStr.toLowerCase()
-                    );
-
-                    // Automatically generate fresh profile row if no historical identity exists
-                    if (!matchedGuest) {
-                        matchedGuest = await dispatchPostRESTRequestHandshake('Guests', {
-                            "Full Name": guestNameStr
-                        });
-                        console.log("New operational guest record auto-initialized:", matchedGuest);
-                    }
+                    // Automatically generate fresh profile row in Guests table on-the-fly
+                    let matchedGuest = await dispatchPostRESTRequestHandshake('Guests', {
+                        "Full Name": guestNameStr
+                    });
 
                     if (!matchedGuest || !matchedGuest.id) {
-                        console.error(`Bypassing Row Allocation: Could not resolve profile ID entry for ${guestNameStr}`);
+                        console.error(`Bypassing Row Allocation: Could not write profile ID entry for ${guestNameStr}`);
                         continue;
                     }
 
                     const guestRecordId = matchedGuest.id;
 
-                    // Compile payload keys strictly mapping your relational columns
+                    // Write row to Bookings table
                     const bookingFieldsPayload = {
                         "Guest": [guestRecordId],
                         "Room": [resolvedAirtableRoomId],
-                        "Status": "Pending"
+                        "Status": "Pending",
+                        "Payment Status": "Paid"
                     };
 
                     if (resolvedIntroducerRecordId) {
                         bookingFieldsPayload["Introducer"] = [resolvedIntroducerRecordId];
                     }
 
+                    let createdBookingRecord = null;
                     if (typeof dispatchPostRESTRequestHandshake === 'function') {
-                        await dispatchPostRESTRequestHandshake('Bookings', bookingFieldsPayload);
+                        createdBookingRecord = await dispatchPostRESTRequestHandshake('Bookings', bookingFieldsPayload);
                     }
 
-                    if (introducerType !== 'Direct' && window.introducerIncentiveEngine) {
-                        window.introducerIncentiveEngine.createIntroducerRecord(
-                            generatedBookingId,
-                            generatedGuestId,
-                            selectedIntroducerName,
-                            packagePriceNum,
-                            commissionBasisType,
-                            commissionInputAmount
-                        );
+                    if (createdBookingRecord && createdBookingRecord.id) {
+                        const internalBookingCode = createdBookingRecord.fields['Booking ID'] || "BK-AURA";
+                        
+                        // 💰 INJECT: Automatically append transaction parameters onto Financial Ledgers sheet
+                        await dispatchPostRESTRequestHandshake('Financial Ledgers', {
+                            "Booking Link": [createdBookingRecord.id],
+                            "Gross Collected": packagePriceNum,
+                            "Payment Gateway Mode": settlementMethodPathway,
+                            "Transaction Timestamp": new Date().toISOString()
+                        });
+
+                        // Keep tracking array for voucher printer compilation
+                        collectedReceiptItems.push({
+                            bookingId: internalBookingCode,
+                            guestName: guestNameStr,
+                            service: chosenPackageName,
+                            price: packagePriceNum
+                        });
+
+                        // Log commission calculations records if channel partner linked
+                        if (introducerType !== 'Direct' && window.introducerIncentiveEngine) {
+                            window.introducerIncentiveEngine.createIntroducerRecord(
+                                internalBookingCode,
+                                guestRecordId,
+                                selectedIntroducerName,
+                                packagePriceNum,
+                                commissionBasisType,
+                                commissionInputAmount
+                            );
+                        }
                     }
                 }
 
-                // 4. Interface Cleanup and Completion Alert operations
+                // 4. 🔥 AUTOMATED RECEIPT GENERATION WINDOW CALL
+                if (collectedReceiptItems.length > 0 && typeof window.openReceiptVoucherPrintWindow === 'function') {
+                    window.openReceiptVoucherPrintWindow(collectedReceiptItems, settlementMethodPathway);
+                } else if (collectedReceiptItems.length > 0) {
+                    console.log("Receipt structural queue processed successfully:", collectedReceiptItems);
+                }
+
+                // 5. Interface Cleanup and Completion Alert operations
                 if (typeof triggerCustomSwalNotification === 'function') {
-                    triggerCustomSwalNotification("POS Engine Clear", "Universal bulk intake balances split and allocated safely.", "success");
+                    triggerCustomSwalNotification("POS Engine Clear", "Universal bulk intake balances split, accounted, and allocated safely.", "success");
                 } else {
-                    alert("Success! Universal bulk intake balances split and allocated safely.");
+                    alert("Success! Universal bulk intake balances split, accounted, and allocated safely.");
                 }
 
                 if (typeof safeCloseModal === 'function') {
