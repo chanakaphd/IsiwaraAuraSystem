@@ -234,7 +234,7 @@ if (typeof cacheGuests !== 'undefined' && cacheGuests.length > 0) {
 
 // Stop if guest doesn't exist
 if (!guestRecordId) {
-    throw new Error(`Guest not found: ${guestNameStr}`);
+    throw new Error(`Guest not found: ${guestRecordId}`);
 }
 
 const bookingFieldsPayload = {
