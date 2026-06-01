@@ -137,7 +137,7 @@ function toggleCommissionAddonLabel() {
 }
 
 /**
- * ⚡ MASTER POS TRACK ENGINE (FULLY AUTOMATED INTERCEPTOR)
+ * ⚡ MASTER POS TRACK ENGINE (FULLY AUTOMATED TRANSACTIONS)
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -214,9 +214,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 let collectedReceiptItems = [];
-                const guestList = await fetchAirtableTableRecords('Guests');
 
-                // 3. Process each guest row entry sequentially
+                // Process each guest row entry sequentially
                 for (let container of activeRows) {
                     const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
                     const priceField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
@@ -229,16 +228,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     const packagePriceNum = priceField ? parseFloat(priceField.value) || 0 : 0;
                     const chosenPackageName = packageSelect ? packageSelect.value : "Ayurveda Treatment Session";
                     
-                    // Link profile context or generate a clean identity on-the-fly
-                    let matchedGuest = guestList.find(g =>
-                        String(g.fields['Full Name'] || '').trim().toLowerCase() === guestNameStr.toLowerCase()
-                    );
-
-                    if (!matchedGuest) {
-                        matchedGuest = await dispatchPostRESTRequestHandshake('Guests', {
-                            "Full Name": guestNameStr
-                        });
-                    }
+                    // Create guest on-the-fly instantly
+                    let matchedGuest = await dispatchPostRESTRequestHandshake('Guests', {
+                        "Full Name": guestNameStr
+                    });
 
                     if (!matchedGuest || !matchedGuest.id) continue;
                     const guestRecordId = matchedGuest.id;
@@ -260,7 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                     if (createdBookingRecord && createdBookingRecord.id) {
-                        // 💰 SUCCESS: Write corresponding metrics onto Financial Ledgers sheet
+                        // 💰 SUCCESS: Write corresponding transaction info into Financial Ledgers
                         await dispatchPostRESTRequestHandshake('Financial Ledgers', {
                             "Booking Link": [createdBookingRecord.id],
                             "Gross Collected": packagePriceNum,
@@ -275,22 +268,53 @@ document.addEventListener("DOMContentLoaded", () => {
                             price: packagePriceNum
                         });
 
-                        // 🤝 SUCCESS: Log commission payments targeting Commissions Ledger table explicitly
-                        if (resolvedIntroducerRecordId) {
-                            await dispatchPostRESTRequestHandshake('Commissions Ledger', {
-                                "Booking Link": [createdBookingRecord.id],
-                                "Introducer Link Profile": [resolvedIntroducerRecordId],
-                                "Total Volume Base": packagePriceNum,
-                                "Payout Due Amount": commissionBasisType === 'LKR' ? commissionInputAmount : (packagePriceNum * (commissionInputAmount / 100)),
-                                "Payout Status": "Pending Tracking"
-                            });
+                        // 🤝 SUCCESS: Log commission payments targeting your commission logic engine
+                        if (window.introducerIncentiveEngine) {
+                            await window.introducerIncentiveEngine.createIntroducerRecord(
+                                createdBookingRecord.fields['Booking ID'] || "BK-AURA",
+                                guestRecordId,
+                                selectedIntroducerName,
+                                packagePriceNum,
+                                commissionBasisType,
+                                commissionInputAmount
+                            );
                         }
                     }
                 }
 
-                // 🖨️ AUTOMATED RECEIPT VIEW INVOKER
-                if (collectedReceiptItems.length > 0 && typeof window.openReceiptVoucherPrintWindow === 'function') {
-                    window.openReceiptVoucherPrintWindow(collectedReceiptItems, settlementMethodPathway);
+                // 🖨️ EMULATED THERMAL PRINTER RECEIPT POPUP INITIALIZER
+                if (collectedReceiptItems.length > 0) {
+                    console.log("Compiling counter voucher layouts...");
+                    const printWindow = window.open('', '_blank', 'width=320,height=600');
+                    if (printWindow) {
+                        printWindow.document.write(`
+                            <html>
+                            <body style="font-family:monospace; font-size:12px; padding:15px; color:#111;">
+                                <div style="text-align:center; font-weight:bold; font-size:14px;">ISIWARA AURA AYURVEDA</div>
+                                <div style="text-align:center; font-size:10px; margin-bottom:10px;">Boutique Wellness Center</div>
+                                <hr style="border-top:1px dashed #000;">
+                                <div style="margin-bottom:8px;">Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
+                                <div style="margin-bottom:10px;">Payment Method: ${settlementMethodPathway}</div>
+                                <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                                    ${collectedReceiptItems.map(item => `
+                                        <tr>
+                                            <td colspan="2" style="font-weight:bold; padding-top:4px;">${item.guestName} (${item.bookingId})</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color:#555;">${item.service}</td>
+                                            <td style="text-align:right; font-weight:bold; vertical-align:bottom;">රු. ${item.price.toLocaleString()}</td>
+                                        </tr>
+                                    `).join('')}
+                                </table>
+                                <hr style="border-top:1px dashed #000; margin-top:10px;">
+                                <div style="text-align:center; font-size:10px; margin-top:15px; font-weight:bold;">✨ Live Balanced Allocation Clear ✨</div>
+                                <div style="text-align:center; font-size:9px; color:#666;">Thank you for visiting Isiwara Aura</div>
+                            </body>
+                            </html>
+                        `);
+                        printWindow.document.close();
+                        setTimeout(() => { printWindow.print(); }, 500);
+                    }
                 }
 
                 if (typeof triggerCustomSwalNotification === 'function') {
