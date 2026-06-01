@@ -12,17 +12,11 @@ async function fetchAndRenderMasterScheduleView() {
     tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 font-monospace small">Compiling accounting blocks...</td></tr>`;
     
     try {
-        let financialsData = await fetchAirtableTableRecords('Financial Ledger');
-        if (!financialsData || financialsData.length === 0) {
-            financialsData = await fetchAirtableTableRecords('Financial Ledgers');
-        }
-
-        let commissionsData = await fetchAirtableTableRecords('Commissions Ledger');
-        if (!commissionsData || commissionsData.length === 0) {
-            commissionsData = await fetchAirtableTableRecords('Commissions Ledgers');
-        }
-
-        const bookingsData = await fetchAirtableTableRecords('Bookings?sort[0][field]=Start%20Time&sort[0][direction]=desc');
+        const [bookingsData, financialsData, commissionsData] = await Promise.all([
+            fetchAirtableTableRecords('Bookings?sort[0][field]=Start%20Time&sort[0][direction]=desc'),
+            fetchAirtableTableRecords('Financial Ledgers'),
+            fetchAirtableTableRecords('Commissions Ledger')
+        ]);
 
         const activeBookings = bookingsData || [];
         const activeFinancials = financialsData || [];
@@ -66,24 +60,32 @@ async function fetchAndRenderMasterScheduleView() {
                 `රු. ${(matchingFinancialRow.fields['Gross Collected'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 
                 'රු. 0.00';
 
+            const roomLabel = fields['Room Number'] || (fields['Room'] && fields['Room'].length > 0 ? 'Assigned Treatment Room' : 'Standard Room');
+            const introLabel = fields['Introducer Name'] || 'Direct Walk-In';
+
             return `
                 <tr class="animate-fade-in">
                     <td><strong>${fields['Booking ID'] || 'BKG-PRX'}</strong></td>
-                    <td>🚪 ${fields['Room Number']?.[0] || 'Standard Room'}</td>
-                    <td>👤 ${fields['Room Number']?.[1] || 'Direct Walk-In'}</td>
+                    <td>🚪 ${roomLabel}</td>
+                    <td>👤 ${introLabel}</td>
                     <td class="fw-bold text-success">${printedRevenueValue}</td>
                     <td><span class="badge bg-success">${fields['Status'] || 'Pending'}</span></td>
                 </tr>
             `;
         }).join('');
 
+        if (activeBookings.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-muted">No operational logs recorded.</td></tr>`;
+        }
+
     } catch (error) {
         console.error("Dashboard render exception:", error);
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-3">⚠️ Connection Error: Failed to compile data maps.</td></tr>`;
     }
 }
 
 /**
- * ⚡ MASTER POS TRACK ENGINE (ROBUST STRING & ATTRIBUTE SELECTORS)
+ * ⚡ MASTER POS TRACK ENGINE (ERROR-PROOF ID RESOLUTION)
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -91,13 +93,32 @@ document.addEventListener("DOMContentLoaded", () => {
         bulkIntakeForm.onsubmit = async (e) => {
             e.preventDefault();
             try {
+                // Secure Room Resolution: Strips and isolates friendly names safely
                 const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
+                if (!selectedRoomFullText) {
+                    alert("Please allocate a treatment room before confirming checkout.");
+                    return;
+                }
+                
                 const parsedRoomClean = selectedRoomFullText.split(' ')[0].trim();
-                let resolvedAirtableRoomId = "";
+                let resolvedAirtableRoomId = null;
                 
                 if (typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
-                    const matchedRoomObject = cacheRooms.find(r => String(r.fields['Room Number'] || '').trim() === parsedRoomClean);
+                    const matchedRoomObject = cacheRooms.find(r => 
+                        String(r.fields['Room Number'] || '').trim() === parsedRoomClean ||
+                        String(r.fields['Room Number'] || '').trim() === selectedRoomFullText.trim()
+                    );
                     if (matchedRoomObject) resolvedAirtableRoomId = matchedRoomObject.id; 
+                }
+
+                // Global fallback safety if cache hasn't loaded yet
+                if (!resolvedAirtableRoomId && typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
+                    resolvedAirtableRoomId = cacheRooms[0].id;
+                }
+
+                if (!resolvedAirtableRoomId) {
+                    alert("Database Resolution Failure: Unable to locate structural record ID for the selected room.");
+                    return;
                 }
 
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
@@ -121,66 +142,100 @@ document.addEventListener("DOMContentLoaded", () => {
                     ? document.querySelectorAll('.dynamic-guest-row') 
                     : document.querySelectorAll('#dynamic-guests-rows-container .row');
 
+                let collectedReceiptItems = [];
+
                 for (let container of activeRows) {
                     const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
                     if (!nameField) continue;
                     const guestNameStr = nameField.value.trim();
                     if (!guestNameStr) continue;
                     
-                    // 🧠 SPECIFIC SELECTOR MATCHING: Resolves index positioning dependency bugs entirely
-                    const pInputField = container.querySelector('.package-price-input') || container.querySelector('[id*="Price"]') || container.querySelector('input[type="number"]');
-                    const vInputField = container.querySelector('.vas-fee-input') || container.querySelector('[id*="Vas"]') || container.querySelector('[placeholder*="VAS"]');
-                    const dInputField = container.querySelector('.discount-input') || container.querySelector('[id*="Discount"]') || container.querySelector('[placeholder*="Discount"]');
+                    const pInputField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
+                    const vInputField = container.querySelectorAll('input[type="number"]')[1];
+                    const dInputField = container.querySelectorAll('input[type="number"]')[2];
 
                     const rawPackagePrice = pInputField ? parseFloat(pInputField.value) || 0 : 0;
                     const manualVasFee = vInputField ? parseFloat(vInputField.value) || 0 : 0;
                     const discountPercentage = dInputField ? parseFloat(dInputField.value) || 0 : 0;
+                    const chosenPackageName = container.querySelector('select') ? container.querySelector('select').value : "Ayurveda Session";
                     
                     const discountValueAmount = rawPackagePrice * (discountPercentage / 100);
                     const netBaseRevenue = rawPackagePrice - discountValueAmount;
+                    const grossCollectedTotal = netBaseRevenue + manualVasFee;
 
-                    // Direct creation request to Guests table
+                    // Step 1: Create Guest Record
                     let matchedGuest = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
                     if (!matchedGuest || !matchedGuest.id) continue;
 
+                    // Step 2: Create Booking using the verified room ID
                     let createdBookingRecord = await dispatchPostRESTRequestHandshake('Bookings', {
                         "Guest": [matchedGuest.id],
                         "Room": [resolvedAirtableRoomId],
                         "Status": "Pending"
                     });
 
+                    // Step 3: Insert downstream financials only if the booking record succeeded
                     if (createdBookingRecord && createdBookingRecord.id) {
-                        const financialPayload = {
+                        
+                        await dispatchPostRESTRequestHandshake('Financial Ledgers', {
                             "Booking Link": [createdBookingRecord.id],
                             "Base Revenue": Number(netBaseRevenue) || 0,
                             "VAS Revenue": Number(manualVasFee) || 0,
                             "Settlement Type": settlementMethodPathway
-                        };
+                        });
 
-                        let finRes = await dispatchPostRESTRequestHandshake('Financial Ledgers', financialPayload);
-                        if (!finRes) await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
+                        collectedReceiptItems.push({
+                            bookingId: createdBookingRecord.fields['Booking ID'] || "BK-AURA",
+                            guestName: guestNameStr,
+                            service: chosenPackageName,
+                            price: grossCollectedTotal
+                        });
 
                         if (resolvedIntroducerRecordId) {
-                            const commissionsPayload = {
+                            await dispatchPostRESTRequestHandshake('Commissions Ledger', {
                                 "Booking Link": [createdBookingRecord.id],
                                 "Introducer Link": [resolvedIntroducerRecordId],
                                 "Total Volume Base": Number(rawPackagePrice + manualVasFee) || 0,
                                 "Commission Percentage": commissionBasisType === 'PCT' ? (parseInt(commissionInputAmount, 10) || 0) : 0,
                                 "Payout Status": "Pending"
-                            };
-
-                            let commRes = await dispatchPostRESTRequestHandshake('Commissions Ledger', commissionsPayload);
-                            if (!commRes) await dispatchPostRESTRequestHandshake('Commissions Ledgers', commissionsPayload);
+                            });
                         }
+                    }
+                }
+
+                // Print Invoice Window Trigger
+                if (collectedReceiptItems.length > 0) {
+                    const printWindow = window.open('', '_blank', 'width=320,height=600');
+                    if (printWindow) {
+                        printWindow.document.write(`
+                            <html>
+                            <body style="font-family:monospace; font-size:12px; padding:15px;">
+                                <div style="text-align:center; font-weight:bold;">ISIWARA AURA AYURVEDA</div>
+                                <hr style="border-top:1px dashed #000;">
+                                <div>Method: ${settlementMethodPathway}</div>
+                                <table style="width:100%; font-size:12px;">
+                                    ${collectedReceiptItems.map(item => `
+                                        <tr><td><strong>${item.guestName}</strong></td><td style="text-align:right;">රු. ${item.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+                                    `).join('')}
+                                </table>
+                            </body>
+                            </html>
+                        `);
+                        printWindow.document.close();
+                        setTimeout(() => { printWindow.print(); }, 500);
                     }
                 }
 
                 if (typeof safeCloseModal === 'function') safeCloseModal('bulkIntakeModal');
                 bulkIntakeForm.reset();
-                if (typeof fetchAndRenderMasterScheduleView === 'function') await fetchAndRenderMasterScheduleView();
+                
+                // Refresh data displays on layout frames
+                if (typeof fetchAndRenderMasterScheduleView === 'function') {
+                    await fetchAndRenderMasterScheduleView();
+                }
 
             } catch (executionError) {
-                console.error("POS Matrix Error:", executionError);
+                console.error("POS Matrix Processing Exception Encountered:", executionError);
             }
         };
     }
