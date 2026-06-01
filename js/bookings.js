@@ -71,6 +71,10 @@ async function fetchAndRenderMasterScheduleView() {
 /**
  * 📊 Dynamic Interface Calculation Layer
  */
+/**
+ * 📊 Dynamic Interface Calculation Layer
+ * Autodetects package price placements to prevent cashier screen zeroes
+ */
 function updateLiveIntakeSummaryDisplayLayer() {
     const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row');
     if (containerRows.length === 0) return;
@@ -84,11 +88,26 @@ function updateLiveIntakeSummaryDisplayLayer() {
     const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
 
     containerRows.forEach(row => {
-        const inputs = row.querySelectorAll('input[type="number"]');
-        const basePackagePrice = inputs[0] ? parseFloat(inputs[0].value) || 0 : 0;
-        const manualVasFee = inputs[1] ? parseFloat(inputs[1].value) || 0 : 0;
-        const discountPercentage = inputs[2] ? parseFloat(inputs[2].value) || 0 : 0;
+        // 🧠 SMARTER FIELD RESOLUTION ENGINE:
+        // Finds inputs specifically by their purpose rather than strictly trusting sequential index numbers
+        const pInput = row.querySelector('.package-price-input') || row.querySelector('input[placeholder*="Price"]') || row.querySelectorAll('input[type="number"]')[0];
+        const vInput = row.querySelector('.vas-fee-input') || row.querySelector('input[placeholder*="VAS"]') || row.querySelectorAll('input[type="number"]')[1];
+        const dInput = row.querySelector('.discount-input') || row.querySelector('input[placeholder*="Discount"]') || row.querySelectorAll('input[type="number"]')[2];
 
+        // Read value from input field. If blank or missing, try reading static text/inner HTML labels within that row frame
+        let basePackagePrice = pInput ? parseFloat(pInput.value) : 0;
+        if (!basePackagePrice || isNaN(basePackagePrice)) {
+            const staticPriceLabel = row.querySelector('.price-display') || row.querySelector('.text-success') || row.querySelector('.small.text-muted');
+            if (staticPriceLabel) {
+                basePackagePrice = parseFloat(staticPriceLabel.innerText.replace(/[^0-9.]/g, '')) || 0;
+            }
+        }
+        if (isNaN(basePackagePrice)) basePackagePrice = 0;
+
+        const manualVasFee = vInput ? parseFloat(vInput.value) || 0 : 0;
+        const discountPercentage = dInput ? parseFloat(dInput.value) || 0 : 0;
+
+        // Execute accounting formulas matching your specifications
         const calculatedDiscountVal = basePackagePrice * (discountPercentage / 100);
 
         totalTreatmentAmount += basePackagePrice;
@@ -96,36 +115,39 @@ function updateLiveIntakeSummaryDisplayLayer() {
         totalDiscountAmount += calculatedDiscountVal;
 
         if (commissionBasisType === 'PCT') {
+            // Formula: (Treatment + VAS) * Commission %
             totalCommissionAmount += (basePackagePrice + manualVasFee) * (commissionInputAmount / 100);
         } else {
+            // Formula: Splitting flat rate allocation across active guest lines pro-rata
             totalCommissionAmount += commissionInputAmount / containerRows.length;
         }
     });
 
     const finalFullAmountNet = (totalTreatmentAmount - totalDiscountAmount) + totalVasAmount;
 
+    // Update the large warning summary header in Section 3
     const labelCalculatedSum = document.getElementById('lblBulkTotalCalculation');
     if (labelCalculatedSum) {
         labelCalculatedSum.innerText = `රු. ${finalFullAmountNet.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
     }
 
+    // Refresh Cashier Verification Summary UI Widget Card Panel
     const summaryWidgetContainer = document.getElementById('posLiveSummaryWidgetContainer');
     if (summaryWidgetContainer) {
         summaryWidgetContainer.innerHTML = `
             <div class="card bg-opacity-10 bg-dark border-secondary my-3 text-white">
                 <div class="card-body p-3 font-monospace small">
                     <h6 class="fw-bold border-bottom border-secondary pb-2 text-warning text-uppercase"><i class="bi bi-shield-check"></i> Cashier Verification Summary</h6>
-                    <div class="d-flex justify-content-between mb-1"><span>Treatment Amount:</span><span class="text-white">රු. ${totalTreatmentAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
-                    <div class="d-flex justify-content-between mb-1"><span>VAS Amount:</span><span class="text-white">රු. ${totalVasAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
-                    <div class="d-flex justify-content-between mb-1 text-danger"><span>Discount Deducted:</span><span>- රු. ${totalDiscountAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
-                    <div class="d-flex justify-content-between mb-2 text-info border-bottom border-secondary pb-2"><span>Commission Amount (Hidden on Guest Receipt):</span><span>රු. ${totalCommissionAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                    <div class="d-flex justify-content-between mb-1"><span>Treatment Amount:</span><span class="text-white fw-bold">රු. ${totalTreatmentAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                    <div class="d-flex justify-content-between mb-1"><span>VAS Amount:</span><span class="text-white fw-bold">රු. ${totalVasAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                    <div class="d-flex justify-content-between mb-1 text-danger"><span>Discount Deducted:</span><span class="fw-bold">- රු. ${totalDiscountAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                    <div class="d-flex justify-content-between mb-2 text-info border-bottom border-secondary pb-2"><span>Commission Amount:</span><span class="fw-bold">රු. ${totalCommissionAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
                     <div class="d-flex justify-content-between pt-1 fw-bold text-success fs-5"><span>FULL AMOUNT (NET):</span><span>රු. ${finalFullAmountNet.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
                 </div>
             </div>
         `;
     }
 }
-
 /**
  /**
  * 🛠️ AUTOMATED DROPDOWN INJECTOR NODE (AIRTABLE-JSON FIXED MAP)
