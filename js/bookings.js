@@ -144,7 +144,7 @@ function safelyForcePopulatePOSDropdownFields() {
             
             // Matches your exact Airtable heading keys verbatim
             const num = fieldsObj['Room Number']; 
-            const cap = fieldsObj['Beds Capacity'] || '1';
+            const cap = fieldsObj['Beds Count'] || '1';
             
             if (!num) return ''; // Bypasses un-initialized rows cleanly
             return `<option value="${num}">Room ${num} (Capacity: ${cap} Beds)</option>`;
