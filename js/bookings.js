@@ -137,7 +137,7 @@ function toggleCommissionAddonLabel() {
 }
 
 /**
- * ⚡ MASTER POS TRACK ENGINE (FULL TRANSACTIONAL AUTOMATION)
+ * ⚡ MASTER POS TRACK ENGINE (FULLY AUTOMATED INTERCEPTOR)
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                // 1. Resolve room designation mapping to clean record hashes
+                // Resolve friendly room selection text to underlying Airtable internal record hash ID string
                 const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
                 if (!selectedRoomFullText) {
                     alert("No room selected.");
@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // 2. Map Introducers channel records handles
+                // Map Introducers channel records handles
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
                 let selectedIntroducerName = "Direct Walk-In";
                 let resolvedIntroducerRecordId = null;
@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
                 const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
-                const settlementMethodPathway = document.getElementById('bulkSettlementMethodSelect') ? document.getElementById('bulkSettlementMethodSelect').value : 'Cash';
+                const settlementMethodPathway = document.getElementById('bulkSettlementMethod') ? document.getElementById('bulkSettlementMethod').value : 'Cash';
 
                 const activeRows = document.querySelectorAll('.dynamic-guest-row').length > 0 
                     ? document.querySelectorAll('.dynamic-guest-row') 
@@ -214,6 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 let collectedReceiptItems = [];
+                const guestList = await fetchAirtableTableRecords('Guests');
 
                 // 3. Process each guest row entry sequentially
                 for (let container of activeRows) {
@@ -228,24 +229,25 @@ document.addEventListener("DOMContentLoaded", () => {
                     const packagePriceNum = priceField ? parseFloat(priceField.value) || 0 : 0;
                     const chosenPackageName = packageSelect ? packageSelect.value : "Ayurveda Treatment Session";
                     
-                    // Automatically generate fresh profile row in Guests table on-the-fly
-                    let matchedGuest = await dispatchPostRESTRequestHandshake('Guests', {
-                        "Full Name": guestNameStr
-                    });
+                    // Link profile context or generate a clean identity on-the-fly
+                    let matchedGuest = guestList.find(g =>
+                        String(g.fields['Full Name'] || '').trim().toLowerCase() === guestNameStr.toLowerCase()
+                    );
 
-                    if (!matchedGuest || !matchedGuest.id) {
-                        console.error(`Bypassing Row Allocation: Could not write profile ID entry for ${guestNameStr}`);
-                        continue;
+                    if (!matchedGuest) {
+                        matchedGuest = await dispatchPostRESTRequestHandshake('Guests', {
+                            "Full Name": guestNameStr
+                        });
                     }
 
+                    if (!matchedGuest || !matchedGuest.id) continue;
                     const guestRecordId = matchedGuest.id;
 
                     // Write row to Bookings table
                     const bookingFieldsPayload = {
                         "Guest": [guestRecordId],
                         "Room": [resolvedAirtableRoomId],
-                        "Status": "Pending",
-                        "Payment Status": "Paid"
+                        "Status": "Pending"
                     };
 
                     if (resolvedIntroducerRecordId) {
@@ -258,46 +260,39 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                     if (createdBookingRecord && createdBookingRecord.id) {
-                        const internalBookingCode = createdBookingRecord.fields['Booking ID'] || "BK-AURA";
-                        
-                        // 💰 INJECT: Automatically append transaction parameters onto Financial Ledgers sheet
+                        // 💰 SUCCESS: Write corresponding metrics onto Financial Ledgers sheet
                         await dispatchPostRESTRequestHandshake('Financial Ledgers', {
                             "Booking Link": [createdBookingRecord.id],
                             "Gross Collected": packagePriceNum,
-                            "Payment Gateway Mode": settlementMethodPathway,
+                            "Settlement Type": settlementMethodPathway,
                             "Transaction Timestamp": new Date().toISOString()
                         });
 
-                        // Keep tracking array for voucher printer compilation
                         collectedReceiptItems.push({
-                            bookingId: internalBookingCode,
+                            bookingId: createdBookingRecord.fields['Booking ID'] || "BK-AURA",
                             guestName: guestNameStr,
                             service: chosenPackageName,
                             price: packagePriceNum
                         });
 
-                        // Log commission calculations records if channel partner linked
-                        if (introducerType !== 'Direct' && window.introducerIncentiveEngine) {
-                            window.introducerIncentiveEngine.createIntroducerRecord(
-                                internalBookingCode,
-                                guestRecordId,
-                                selectedIntroducerName,
-                                packagePriceNum,
-                                commissionBasisType,
-                                commissionInputAmount
-                            );
+                        // 🤝 SUCCESS: Log commission payments targeting Commissions Ledger table explicitly
+                        if (resolvedIntroducerRecordId) {
+                            await dispatchPostRESTRequestHandshake('Commissions Ledger', {
+                                "Booking Link": [createdBookingRecord.id],
+                                "Introducer Link Profile": [resolvedIntroducerRecordId],
+                                "Total Volume Base": packagePriceNum,
+                                "Payout Due Amount": commissionBasisType === 'LKR' ? commissionInputAmount : (packagePriceNum * (commissionInputAmount / 100)),
+                                "Payout Status": "Pending Tracking"
+                            });
                         }
                     }
                 }
 
-                // 4. 🔥 AUTOMATED RECEIPT GENERATION WINDOW CALL
+                // 🖨️ AUTOMATED RECEIPT VIEW INVOKER
                 if (collectedReceiptItems.length > 0 && typeof window.openReceiptVoucherPrintWindow === 'function') {
                     window.openReceiptVoucherPrintWindow(collectedReceiptItems, settlementMethodPathway);
-                } else if (collectedReceiptItems.length > 0) {
-                    console.log("Receipt structural queue processed successfully:", collectedReceiptItems);
                 }
 
-                // 5. Interface Cleanup and Completion Alert operations
                 if (typeof triggerCustomSwalNotification === 'function') {
                     triggerCustomSwalNotification("POS Engine Clear", "Universal bulk intake balances split, accounted, and allocated safely.", "success");
                 } else {
@@ -313,7 +308,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 
                 bulkIntakeForm.reset();
-                
                 if (typeof fetchAndRenderMasterScheduleView === 'function') {
                     await fetchAndRenderMasterScheduleView();
                 }
