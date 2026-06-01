@@ -1,5 +1,5 @@
 /**
- * Isiwara Aura - Master Schedule & POS Engine
+ * Isiwara Aura - Master Schedule, POS Engine & Dropdown Initializer
  */
 
 async function fetchAndRenderMasterScheduleView() {
@@ -63,7 +63,6 @@ async function fetchAndRenderMasterScheduleView() {
 
 /**
  * 📊 Dynamic Interface Calculation Layer
- * Calculates values exactly as requested for Cashier verification
  */
 function updateLiveIntakeSummaryDisplayLayer() {
     const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row');
@@ -78,7 +77,6 @@ function updateLiveIntakeSummaryDisplayLayer() {
     const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
 
     containerRows.forEach(row => {
-        // Targets original indexed inputs safely
         const inputs = row.querySelectorAll('input[type="number"]');
         const basePackagePrice = inputs[0] ? parseFloat(inputs[0].value) || 0 : 0;
         const manualVasFee = inputs[1] ? parseFloat(inputs[1].value) || 0 : 0;
@@ -99,13 +97,11 @@ function updateLiveIntakeSummaryDisplayLayer() {
 
     const finalFullAmountNet = (totalTreatmentAmount - totalDiscountAmount) + totalVasAmount;
 
-    // Update main total element
     const labelCalculatedSum = document.getElementById('lblBulkTotalCalculation');
     if (labelCalculatedSum) {
         labelCalculatedSum.innerText = `රු. ${finalFullAmountNet.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
     }
 
-    // Cashier Verification Widget Layout
     const summaryWidgetContainer = document.getElementById('posLiveSummaryWidgetContainer');
     if (summaryWidgetContainer) {
         summaryWidgetContainer.innerHTML = `
@@ -124,6 +120,33 @@ function updateLiveIntakeSummaryDisplayLayer() {
 }
 
 /**
+ * 🛠️ AUTOMATED DROPDOWN INJECTOR NODE
+ * Ensures metadata fields populate reliably when the modal shifts into focus
+ */
+function safelyForcePopulatePOSDropdownFields() {
+    console.log("📥 Syncing global metadata cache with checkout fields...");
+
+    // 1. Populate Target Rooms
+    const roomSelect = document.getElementById('bulkIntakeRoomSelect');
+    if (roomSelect && typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
+        roomSelect.innerHTML = cacheRooms.map(r => {
+            const num = r.fields['Room Number'] || 'N/A';
+            const cap = r.fields['Beds Capacity'] || '1';
+            return `<option value="${num}">🚪 Room ${num} (Capacity: ${cap} Beds)</option>`;
+        }).join('');
+    }
+
+    // 2. Populate Registered Introducers
+    const introSelect = document.getElementById('bulkIntakeIntroducerSelect');
+    if (introSelect && typeof cacheIntroducers !== 'undefined' && cacheIntroducers.length > 0) {
+        introSelect.innerHTML = cacheIntroducers.map(i => {
+            const name = i.fields['Full Name'] || 'Unknown Partner';
+            return `<option value="${name}">👤 ${name}</option>`;
+        }).join('');
+    }
+}
+
+/**
  * ⚡ UNIVERSAL POS SUBMIT ENGINE
  */
 document.addEventListener("DOMContentLoaded", () => {
@@ -132,6 +155,15 @@ document.addEventListener("DOMContentLoaded", () => {
         
         bulkIntakeForm.addEventListener('input', updateLiveIntakeSummaryDisplayLayer);
         bulkIntakeForm.addEventListener('change', updateLiveIntakeSummaryDisplayLayer);
+
+        // Bootstrap Modal Event Hook: Runs automatically right when the user clicks the open button
+        const modalElement = document.getElementById('bulkIntakeModal');
+        if (modalElement) {
+            modalElement.addEventListener('show.bs.modal', () => {
+                safelyForcePopulatePOSDropdownFields();
+                updateLiveIntakeSummaryDisplayLayer();
+            });
+        }
 
         bulkIntakeForm.onsubmit = async (e) => {
             e.preventDefault();
@@ -188,11 +220,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     const netBaseRevenue = rawPackagePrice - calculatedDiscountAmount;
                     const grossCollectedTotal = netBaseRevenue + manualVasFee;
 
-                    // 1. Register Guest
                     let guestProfileRecord = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
                     if (!guestProfileRecord || !guestProfileRecord.id) continue;
 
-                    // 2. Commit Booking directly as Completed
                     let bookingEntryRecord = await dispatchPostRESTRequestHandshake('Bookings', {
                         "Guest": [guestProfileRecord.id],
                         "Room": [resolvedAirtableRoomId],
@@ -200,7 +230,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
 
                     if (bookingEntryRecord && bookingEntryRecord.id) {
-                        // 3. Document Financial Ledger Flow
                         await dispatchPostRESTRequestHandshake('Financial Ledgers', {
                             "Booking Link": [bookingEntryRecord.id],
                             "Base Revenue": Number(netBaseRevenue) || 0,
@@ -215,7 +244,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             price: grossCollectedTotal
                         });
 
-                        // 4. Log Commission Payable as Pending
                         if (resolvedIntroducerRecordId) {
                             await dispatchPostRESTRequestHandshake('Commissions Ledger', {
                                 "Booking Link": [bookingEntryRecord.id],
@@ -228,7 +256,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                // Branded Receipt Voucher Popup Layout
                 if (collectedReceiptItems.length > 0) {
                     const printWindow = window.open('', '_blank', 'width=340,height=650');
                     if (printWindow) {
@@ -266,7 +293,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                // Close bootstrap modal cleanly
                 const modalEl = document.getElementById('bulkIntakeModal');
                 const modalInstance = bootstrap.Modal.getInstance(modalEl);
                 if (modalInstance) modalInstance.hide();
