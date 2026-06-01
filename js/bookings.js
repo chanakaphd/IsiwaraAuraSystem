@@ -3,7 +3,7 @@
  */
 
 /**
- * Compiles and renders active operations rows securely from cloud files.
+ * Compiles and renders active operational rows cleanly from cloud maps.
  */
 async function fetchAndRenderMasterScheduleView() {
     const tableBody = document.getElementById('data-table-body');
@@ -31,12 +31,7 @@ async function fetchAndRenderMasterScheduleView() {
             return recordDate.getFullYear() === currentYearValue && recordDate.getMonth() === currentMonthValue;
         });
 
-        let mtdGrossCollectedRevenue = 0;
-        mtdLedgerRecords.forEach(ledger => {
-            mtdGrossCollectedRevenue += (ledger.fields['Gross Collected'] || 0);
-        });
-
-        // Inject metrics safely into dashboard summary boxes
+        // Inject dynamic counts safely into dashboard cards
         if(document.getElementById('boxMtdGuests')) document.getElementById('boxMtdGuests').innerText = mtdLedgerRecords.length;
         if(document.getElementById('boxMtdTxCount')) document.getElementById('boxMtdTxCount').innerText = activeBookings.length;
         if(document.getElementById('boxMtdUtilRate')) document.getElementById('boxMtdUtilRate').innerText = `${Math.min(98, Math.round(15 + (activeBookings.length * 2.2)))}%`;
@@ -48,11 +43,11 @@ async function fetchAndRenderMasterScheduleView() {
                 `රු. ${(matchingFinancialRow.fields['Gross Collected'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 
                 'රු. 0.00';
 
-            const roomLabel = fields['Room Number'] || 'Treatment Quarters';
+            const roomLabel = fields['Room Number'] || 'Treatment Room';
             const guestLabel = fields['Guest Name'] || 'Walk-In Client';
             const currentOperationalStatus = fields['Status'] || 'Completed';
 
-            // Visual badge styling configuration mapping
+            // Distinct badge configurations matching realized double-entry parameters
             const badgeClass = currentOperationalStatus === 'Completed' || currentOperationalStatus === 'Confirmed' ? 'bg-success' : 'bg-warning';
 
             return `
@@ -71,64 +66,71 @@ async function fetchAndRenderMasterScheduleView() {
         }
 
     } catch (error) {
-        console.error("Dashboard Core Engine Exception:", error);
-        tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-3">⚠️ Stream Alignment Fault. Check console parameters.</td></tr>`;
+        console.error("Dashboard Master Render Interrupted:", error);
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-3">⚠️ Stream Alignment Fault. Check system mappings.</td></tr>`;
     }
 }
 
 /**
- * Dynamic Interface Arithmetic Calculation Layer Interceptor
- * Computes aggregated structural rows total blocks to inject directly into the UI layer.
+ * Dynamic Interface Accounting Matrix Monitor
+ * Continually calculates intermediate totals to drive the live POS preview summary box.
  */
 function updateLiveIntakeSummaryDisplayLayer() {
-    const activeRows = document.querySelectorAll('.dynamic-guest-row, #dynamic-guests-rows-container .row');
-    if(activeRows.length === 0) return;
+    const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row');
+    if (containerRows.length === 0) return;
 
-    let aggregateBaseRevenue = 0;
-    let aggregateVasAmount = 0;
-    let aggregateDiscount = 0;
-    let aggregateCommission = 0;
+    let totalGrossPackageValue = 0;
+    let totalVasAmount = 0;
+    let totalDiscountAmount = 0;
+    let totalCommissionAmount = 0;
 
     const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
     const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
 
-    activeRows.forEach(container => {
-        const pInputField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
-        const vInputField = container.querySelector('.vas-fee-input') || container.querySelectorAll('input[type="number"]')[1];
-        const dInputField = container.querySelector('.discount-input') || container.querySelectorAll('input[type="number"]')[2];
+    containerRows.forEach(row => {
+        const pInput = row.querySelector('.package-price-input') || row.querySelector('input[type="number"]');
+        const vInput = row.querySelector('.vas-fee-input') || row.querySelectorAll('input[type="number"]')[1];
+        const dInput = row.querySelector('.discount-input') || row.querySelectorAll('input[type="number"]')[2];
 
-        const rawPackagePrice = pInputField ? parseFloat(pInputField.value) || 0 : 0;
-        const manualVasFee = vInputField ? parseFloat(vInputField.value) || 0 : 0;
-        const discountPercentage = dInputField ? parseFloat(dInputField.value) || 0 : 0;
+        const basePackagePrice = pInput ? parseFloat(pInput.value) || 0 : 0;
+        const manualVasFee = vInput ? parseFloat(vInput.value) || 0 : 0;
+        const discountPercentage = dInput ? parseFloat(dInput.value) || 0 : 0;
 
-        const discountValueAmount = rawPackagePrice * (discountPercentage / 100);
-        const netBaseRevenue = rawPackagePrice - discountValueAmount;
+        const calculatedDiscountVal = basePackagePrice * (discountPercentage / 100);
+        const netPackageRevenue = basePackagePrice - calculatedDiscountVal;
 
-        aggregateBaseRevenue += netBaseRevenue;
-        aggregateVasAmount += manualVasFee;
-        aggregateDiscount += discountValueAmount;
+        totalGrossPackageValue += basePackagePrice;
+        totalVasAmount += manualVasFee;
+        totalDiscountAmount += calculatedDiscountVal;
 
         if (commissionBasisType === 'PCT') {
-            aggregateCommission += (rawPackagePrice + manualVasFee) * (commissionInputAmount / 100);
+            // Rule: (Package Price + VAS Fee) * Commission %
+            totalCommissionAmount += (basePackagePrice + manualVasFee) * (commissionInputAmount / 100);
         } else {
-            aggregateCommission += commissionInputAmount / activeRows.length; // Pro-rated breakdown
+            // Rule: Pro-rated division of the flat currency input across split guest lines
+            totalCommissionAmount += commissionInputAmount / containerRows.length;
         }
     });
 
-    const aggregateTotalPaid = aggregateBaseRevenue + aggregateVasAmount;
+    const finalTotalSettledPaid = (totalGrossPackageValue - totalDiscountAmount) + totalVasAmount;
 
-    // Inject layout text values safely into the UI Summary element box if it exists
+    // Synchronize full numeric layout blocks directly to the primary label field nodes
+    const labelCalculatedSum = document.getElementById('lblBulkTotalCalculation');
+    if (labelCalculatedSum) {
+        labelCalculatedSum.innerText = `රු. ${finalTotalSettledPaid.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    }
+
     const summaryWidgetContainer = document.getElementById('posLiveSummaryWidgetContainer');
     if (summaryWidgetContainer) {
         summaryWidgetContainer.innerHTML = `
-            <div class="card bg-light border-0 shadow-sm mb-3">
+            <div class="card bg-opacity-10 bg-dark border-secondary my-3 text-white">
                 <div class="card-body p-3 font-monospace small">
-                    <h6 class="fw-bold border-bottom pb-2 text-uppercase tracking-wider text-success"><i class="bi bi-calculator"></i> Live Real-Time Audit Summary Block</h6>
-                    <div class="d-flex justify-content-between"><span>Gross Package Allocation Base:</span><strong>රු. ${aggregateBaseRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
-                    <div class="d-flex justify-content-between"><span>Value-Added Support (VAS) Revenue:</span><strong>රු. ${aggregateVasAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
-                    <div class="d-flex justify-content-between text-danger"><span>Operational Write-Offs (Discount):</span><strong>- රු. ${aggregateDiscount.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></div>
-                    <div class="d-flex justify-content-between text-muted border-bottom pb-2"><span>Accounts Payable (Introducer Comm):</span><span>රු. ${aggregateCommission.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
-                    <div class="d-flex justify-content-between pt-2 fw-bold text-success fs-6"><span>TOTAL SETTLED BALANCES PAID:</span><span>රු. ${aggregateTotalPaid.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                    <h6 class="fw-bold border-bottom border-secondary pb-2 text-warning text-uppercase"><i class="bi bi-calculator"></i> Live Real-Time POS Audit Trail</h6>
+                    <div class="d-flex justify-content-between mb-1"><span>Gross Package Base Value:</span><span class="text-white">රු. ${totalGrossPackageValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                    <div class="d-flex justify-content-between mb-1"><span>Manual VAS Fee Additions:</span><span class="text-white">රු. ${totalVasAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                    <div class="d-flex justify-content-between mb-1 text-danger"><span>Deducted Counter Discounts:</span><span>- ਰු. ${totalDiscountAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                    <div class="d-flex justify-content-between mb-2 text-info border-bottom border-secondary pb-2"><span>Accounts Payable Liability (Introducer):</span><span>රු. ${totalCommissionAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+                    <div class="d-flex justify-content-between pt-1 fw-bold text-warning fs-5"><span>NET CHECKOUT COLLECTED:</span><span>රු. ${finalTotalSettledPaid.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
                 </div>
             </div>
         `;
@@ -136,28 +138,36 @@ function updateLiveIntakeSummaryDisplayLayer() {
 }
 
 /**
- * ⚡ MASTER INTERACTIVE POS TRACK ENGINE INJECTION
+ * ⚡ MASTER ACCOUNTING DATA PIPELINE INJECTION
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
     if (bulkIntakeForm) {
         
-        // Setup live form mutation change interceptors to redraw interface boxes on configuration change events
+        // Dynamic event hooks to ensure real-time rendering as elements update
         bulkIntakeForm.addEventListener('input', updateLiveIntakeSummaryDisplayLayer);
         bulkIntakeForm.addEventListener('change', updateLiveIntakeSummaryDisplayLayer);
 
         bulkIntakeForm.onsubmit = async (e) => {
             e.preventDefault();
-            console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
+            console.log("🚀 Executing Counter POS Double-Entry Pipeline...");
 
             try {
                 const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
+                if (!selectedRoomFullText) {
+                    alert("Operation Halted: Please allocate a valid treatment room space before processing checkout.");
+                    return;
+                }
+
                 const parsedRoomClean = selectedRoomFullText.split(' ')[0].trim();
-                let resolvedAirtableRoomId = "";
+                let resolvedAirtableRoomId = null;
                 
                 if (typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
-                    const matchedRoomObject = cacheRooms.find(r => String(r.fields['Room Number'] || '').trim() === parsedRoomClean);
-                    if (matchedRoomObject) resolvedAirtableRoomId = matchedRoomObject.id; 
+                    const matchedRoom = cacheRooms.find(r => 
+                        String(r.fields['Room Number'] || '').trim() === parsedRoomClean ||
+                        String(r.fields['Room Number'] || '').trim() === selectedRoomFullText.trim()
+                    );
+                    if (matchedRoom) resolvedAirtableRoomId = matchedRoom.id; 
                 }
                 
                 if (!resolvedAirtableRoomId && typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
@@ -178,108 +188,117 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
                 const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
-                const pathwayDropdownElement = document.getElementById('bulkSettlementMethodSelect') || document.getElementById('bulkSettlementMethod');
+                const pathwayDropdownElement = document.getElementById('bulkSettlementMethod');
                 const settlementMethodPathway = pathwayDropdownElement ? pathwayDropdownElement.value : 'Cash';
 
-                const activeRows = document.querySelectorAll('.dynamic-guest-row').length > 0 
-                    ? document.querySelectorAll('.dynamic-guest-row') 
-                    : document.querySelectorAll('#dynamic-guests-rows-container .row');
+                const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row');
+                if (containerRows.length === 0) {
+                    alert("Checkout Terminated: Matrix requires at least one initialized guest profile row allocation block.");
+                    return;
+                }
 
                 let collectedReceiptItems = [];
-                
-                // Fetch systemic dynamic administration branding variables
                 const savedBrandingLogoUrl = localStorage.getItem('SYSTEM_LOGO_URL') || "https://chanakaphd.github.io/IsiwaraAuraSystem/assets/logo.png";
 
-                for (let container of activeRows) {
-                    const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
+                for (let row of containerRows) {
+                    const nameField = row.querySelector('.guest-name-input') || row.querySelector('input[type="text"]');
                     if (!nameField) continue;
                     const guestNameStr = nameField.value.trim();
                     if (!guestNameStr) continue;
                     
-                    const pInputField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
-                    const vInputField = container.querySelectorAll('input[type="number"]')[1];
-                    const dInputField = container.querySelectorAll('input[type="number"]')[2];
+                    const pInput = row.querySelector('.package-price-input') || row.querySelector('input[type="number"]');
+                    const vInput = row.querySelectorAll('input[type="number"]')[1];
+                    const dInput = row.querySelectorAll('input[type="number"]')[2];
 
-                    const rawPackagePrice = pInputField ? parseFloat(pInputField.value) || 0 : 0;
-                    const manualVasFee = vInputField ? parseFloat(vInputField.value) || 0 : 0;
-                    const discountPercentage = dInputField ? parseFloat(dInputField.value) || 0 : 0;
-                    const chosenPackageName = container.querySelector('select') ? container.querySelector('select').value : "Ayurveda Treatment Session";
+                    const rawPackagePrice = pInput ? parseFloat(pInput.value) || 0 : 0;
+                    const manualVasFee = vInput ? parseFloat(vInput.value) || 0 : 0;
+                    const discountPercentage = dInput ? parseFloat(dInput.value) || 0 : 0;
+                    const chosenPackageName = row.querySelector('select') ? row.querySelector('select').value : "Ayurveda Treatment Session";
                     
-                    const discountValueAmount = rawPackagePrice * (discountPercentage / 100);
-                    const netBaseRevenue = rawPackagePrice - discountValueAmount;
+                    const calculatedDiscountAmount = rawPackagePrice * (discountPercentage / 100);
+                    const netBaseRevenue = rawPackagePrice - calculatedDiscountAmount;
                     const grossCollectedTotal = netBaseRevenue + manualVasFee;
 
-                    // 1. Direct Insertion profiles row
-                    let matchedGuest = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
-                    if (!matchedGuest || !matchedGuest.id) continue;
+                    let dynamicCommProRatedValue = 0;
+                    if (resolvedIntroducerRecordId) {
+                        if (commissionBasisType === 'PCT') {
+                            dynamicCommProRatedValue = (rawPackagePrice + manualVasFee) * (commissionInputAmount / 100);
+                        } else {
+                            dynamicCommProRatedValue = commissionInputAmount / containerRows.length;
+                        }
+                    }
 
-                    // 2. Commit booking setting configuration directly to "Completed" to balance point of sale settling
-                    let createdBookingRecord = await dispatchPostRESTRequestHandshake('Bookings', {
-                        "Guest": [matchedGuest.id],
+                    // 1. Double Entry Step 1: Create Identity Map Link
+                    let guestProfileRecord = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
+                    if (!guestProfileRecord || !guestProfileRecord.id) continue;
+
+                    // 2. Double Entry Step 2: Establish Realized Booking Record committed directly as "Completed"
+                    let bookingEntryRecord = await dispatchPostRESTRequestHandshake('Bookings', {
+                        "Guest": [guestProfileRecord.id],
                         "Room": [resolvedAirtableRoomId],
-                        "Status": "Completed" // ✅ Overwritten dynamically to map payment execution fulfillment
+                        "Status": "Completed" // ✅ Instantly verified and finalized at point-of-sale checkout
                     });
 
-                    if (createdBookingRecord && createdBookingRecord.id) {
+                    if (bookingEntryRecord && bookingEntryRecord.id) {
                         
-                        // 3. Document asset incoming records double entry balance mappings
+                        // 3. Double Entry Step 3: Map revenue distribution channels safely inside Financial Ledgers
                         await dispatchPostRESTRequestHandshake('Financial Ledgers', {
-                            "Booking Link": [createdBookingRecord.id],
+                            "Booking Link": [bookingEntryRecord.id],
                             "Base Revenue": Number(netBaseRevenue) || 0,
                             "VAS Revenue": Number(manualVasFee) || 0,
                             "Settlement Type": settlementMethodPathway
                         });
 
                         collectedReceiptItems.push({
-                            bookingId: createdBookingRecord.fields['Booking ID'] || "BK-AURA",
+                            bookingId: bookingEntryRecord.fields['Booking ID'] || "BK-AURA",
                             guestName: guestNameStr,
                             service: chosenPackageName,
                             price: grossCollectedTotal
                         });
 
-                        // 4. Document liability accounts payable ledger entry balance mapping explicitly in pending status state
+                        // 4. Double Entry Step 4: Map accounts payable liabilities inside Commissions Ledger flagged as "Pending"
                         if (resolvedIntroducerRecordId) {
                             await dispatchPostRESTRequestHandshake('Commissions Ledger', {
-                                "Booking Link": [createdBookingRecord.id],
+                                "Booking Link": [bookingEntryRecord.id],
                                 "Introducer Link": [resolvedIntroducerRecordId],
                                 "Total Volume Base": Number(rawPackagePrice + manualVasFee) || 0,
                                 "Commission Percentage": commissionBasisType === 'PCT' ? (parseInt(commissionInputAmount, 10) || 0) : 0,
-                                "Payout Status": "Pending" // ✅ Safely locks inside dynamic accounts payable matrix tracker
+                                "Payout Status": "Pending" // ✅ Locked as structural liability item until released by management panels
                             });
                         }
                     }
                 }
 
-                // 🖨️ ADVANCED THERMAL PRINTER RECEIPT POPUP INJECTION (WITH LOGO & ALIGNED CALCULATIONS)
+                // 🖨️ ADVANCED INCIDENT COMMITTED RECEIPT VOUCHER (LOGO ENGINE DRIVEN)
                 if (collectedReceiptItems.length > 0) {
                     const printWindow = window.open('', '_blank', 'width=340,height=650');
                     if (printWindow) {
                         printWindow.document.write(`
                             <html>
                             <body style="font-family:monospace; font-size:12px; padding:15px; color:#111;">
-                                <div style="text-align:center; margin-bottom:10px;">
-                                    <img src="${savedBrandingLogoUrl}" alt="Logo" style="max-width:90px; height:auto; filter:grayscale(100%); margin-bottom:4px;"><br>
-                                    <strong style="font-size:14px;">ISIWARA AURA</strong><br>
-                                    <span style="font-size:10px;">Premium Ayurveda Center & Spa</span>
+                                <div style="text-align:center; margin-bottom:12px;">
+                                    <img src="${savedBrandingLogoUrl}" alt="Logo" style="max-width:100px; height:auto; margin-bottom:6px;"><br>
+                                    <strong style="font-size:15px;">ISIWARA AURA</strong><br>
+                                    <span style="font-size:10px; color:#444;">Boutique Heritage Wellness Center</span>
                                 </div>
-                                <hr style="border-top:1px dashed #000; margin-bottom:8px;">
-                                <div style="font-size:11px; margin-bottom:4px;"><strong>Date:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
-                                <div style="font-size:11px; margin-bottom:10px;"><strong>Payment Gateway Mode:</strong> ${settlementMethodPathway}</div>
+                                <hr style="border-top:1px dashed #000; margin-bottom:10px;">
+                                <div style="margin-bottom:4px;"><strong>Date/Time:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
+                                <div style="margin-bottom:12px;"><strong>Settlement Channel:</strong> ${settlementMethodPathway}</div>
                                 <table style="width:100%; font-size:12px; border-collapse:collapse;">
                                     <tr style="border-bottom:1px solid #000; font-weight:bold;">
-                                        <td>Description</td>
-                                        <td style="text-align:right;">Amount</td>
+                                        <td style="padding-bottom:4px;">Fulfillment Line</td>
+                                        <td style="text-align:right; padding-bottom:4px;">Collected Price</td>
                                     </tr>
                                     ${collectedReceiptItems.map(item => `
                                         <tr>
-                                            <td style="padding-top:6px;"><strong>${item.guestName}</strong><br><span style="color:#444; font-size:11px;">${item.service} (${item.bookingId})</span></td>
+                                            <td style="padding:6px 0 2px 0;"><strong>${item.guestName}</strong><br><span style="color:#555; font-size:11px;">${item.service} (${item.bookingId})</span></td>
                                             <td style="text-align:right; font-weight:bold; vertical-align:bottom;">රු. ${item.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                                         </tr>
                                     `).join('')}
                                 </table>
-                                <hr style="border-top:1px dashed #000; margin-top:15px;">
-                                <div style="text-align:center; font-size:10px; font-weight:bold; margin-top:10px;">✨ TRANSACTIONS COMMITTED AS COMPLETED ✨</div>
-                                <div style="text-align:center; font-size:9px; color:#555; margin-top:4px;">Thank you for checking in out of counter panels.</div>
+                                <hr style="border-top:1px dashed #000; margin-top:15px; margin-bottom:10px;">
+                                <div style="text-align:center; font-size:10px; font-weight:bold; letter-spacing:1px; color:#1e4620;">✔ SETTLED STATUS: COMPLETED TRANSACTION</div>
+                                <div style="text-align:center; font-size:9px; color:#555; margin-top:2px;">Thank you for checking out with Isiwara Aura.</div>
                             </body>
                             </html>
                         `);
@@ -292,14 +311,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 bulkIntakeForm.reset();
                 
                 const widget = document.getElementById('posLiveSummaryWidgetContainer');
-                if (widget) widget.innerHTML = ""; // Clear widget audit data trail safely
+                if (widget) widget.innerHTML = "";
 
                 if (typeof fetchAndRenderMasterScheduleView === 'function') {
                     await fetchAndRenderMasterScheduleView();
                 }
 
             } catch (executionError) {
-                console.error("Master Processing Thread Exception:", executionError);
+                console.error("Critical POS Exception caught:", executionError);
             }
         };
     }
