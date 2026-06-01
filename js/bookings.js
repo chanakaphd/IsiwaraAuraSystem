@@ -18,11 +18,18 @@ async function fetchAndRenderMasterScheduleView() {
     }
 
     try {
-        const [bookingsData, financialsData, commissionsData] = await Promise.all([
-            fetchAirtableTableRecords('Bookings?sort[0][field]=Start%20Time&sort[0][direction]=desc'),
-            fetchAirtableTableRecords('Financial%20Ledgers'),
-            fetchAirtableTableRecords('Commissions%20Ledger')
-        ]);
+        // Fallback-safe initialization pulls
+        let financialsData = await fetchAirtableTableRecords('Financial Ledger');
+        if (!financialsData || financialsData.length === 0) {
+            financialsData = await fetchAirtableTableRecords('Financial Ledgers');
+        }
+
+        let commissionsData = await fetchAirtableTableRecords('Commissions Ledger');
+        if (!commissionsData || commissionsData.length === 0) {
+            commissionsData = await fetchAirtableTableRecords('Commissions Ledgers');
+        }
+
+        const bookingsData = await fetchAirtableTableRecords('Bookings?sort[0][field]=Start%20Time&sort[0][direction]=desc');
 
         const activeBookings = bookingsData || [];
         const activeFinancials = financialsData || [];
@@ -87,13 +94,8 @@ async function fetchAndRenderMasterScheduleView() {
             `;
         }).join('');
 
-        if (activeBookings.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-muted">No schedule rows recorded in database for this sequence filter.</td></tr>`;
-        }
-
     } catch (error) {
-        console.error("Critical rendering exception encountered inside Bookings module wrapper:", error);
-        tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center fw-bold py-3">⚠️ Network Communication Timeout: Failed to compile master schedule data maps from Airtable.</td></tr>`;
+        console.error("Critical rendering exception encountered inside Bookings module:", error);
     }
 }
 
@@ -122,22 +124,12 @@ function renderSystemAllocationQRGraphicNode(domElementId, bookingId) {
             correctLevel: QRCode.CorrectLevel.M
         });
     } catch (qrException) {
-        targetElement.innerText = "QR Generation Engine Failed. Check CDN Link.";
-    }
-}
-
-function toggleCommissionAddonLabel() {
-    const type = document.getElementById('intakeCommType').value;
-    const label = document.getElementById('lblCommValue');
-    if (label) {
-        label.innerText = type === 'LKR' 
-            ? 'Commission Value Allocation (රු.)' 
-            : 'Commission Percentage Split Rate (%)';
+        targetElement.innerText = "QR Generation Engine Failed.";
     }
 }
 
 /**
- * ⚡ MASTER POS TRACK ENGINE (ADVANCED MATHEMATICAL MATRIX CONTEXT)
+ * ⚡ MASTER POS TRACK ENGINE (TYPO-PROOF TRANSACTION FALLBACKS)
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -147,13 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                // 1. Resolve room designation mapping to clean record hashes
                 const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
-                if (!selectedRoomFullText) {
-                    alert("No room selected.");
-                    return;
-                }
-
                 const parsedRoomClean = selectedRoomFullText.split(' ')[0].trim();
                 let resolvedAirtableRoomId = "";
                 
@@ -162,21 +148,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         const dbRoomNum = String(r.fields['Room Number'] || '').trim();
                         return dbRoomNum === parsedRoomClean || dbRoomNum === selectedRoomFullText;
                     });
-                    if (matchedRoomObject) {
-                        resolvedAirtableRoomId = matchedRoomObject.id; 
-                    }
+                    if (matchedRoomObject) resolvedAirtableRoomId = matchedRoomObject.id; 
                 }
                 
                 if (!resolvedAirtableRoomId && typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
                     resolvedAirtableRoomId = cacheRooms[0].id; 
                 }
-                
-                if (!resolvedAirtableRoomId) {
-                    alert("Allocation Halted: Room reference cache is empty.");
-                    return;
-                }
 
-                // 2. Map Introducers channel records handles
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
                 let selectedIntroducerName = "Direct Walk-In";
                 let resolvedIntroducerRecordId = null;
@@ -187,23 +165,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         const matchedIntroObj = cacheIntroducers.find(i => i.fields['Full Name'] === selectedIntroducerName);
                         if (matchedIntroObj) resolvedIntroducerRecordId = matchedIntroObj.id;
                     }
-                } else if (introducerType === 'New') {
-                    selectedIntroducerName = document.getElementById('newIntroFullName').value.trim();
-                    if (typeof dispatchPostRESTRequestHandshake === 'function' && selectedIntroducerName) {
-                        const newIntroResult = await dispatchPostRESTRequestHandshake('Introducers', {
-                            "Full Name": selectedIntroducerName,
-                            "Calling Name": selectedIntroducerName.split(' ')[0] || 'Partner',
-                            "NIC Number": document.getElementById('newIntroNIC').value.trim(),
-                            "Address": document.getElementById('newIntroAddress').value.trim()
-                        });
-                        if (newIntroResult) resolvedIntroducerRecordId = newIntroResult.id;
-                    }
                 }
 
-                // Capture global form commission control metrics
                 const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
                 const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
-                
                 const pathwayDropdownElement = document.getElementById('bulkSettlementMethodSelect') || document.getElementById('bulkSettlementMethod');
                 const settlementMethodPathway = pathwayDropdownElement ? pathwayDropdownElement.value : 'Cash';
 
@@ -211,14 +176,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     ? document.querySelectorAll('.dynamic-guest-row') 
                     : document.querySelectorAll('#dynamic-guests-rows-container .row');
 
-                if (activeRows.length === 0) {
-                    alert("Allocation Aborted: Form terminal expects at least one valid row allocation frame.");
-                    return;
-                }
-
                 let collectedReceiptItems = [];
 
-                // 3. Process each guest row entry sequentially
                 for (let container of activeRows) {
                     const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
                     const packageSelect = container.querySelector('.package-select-menu') || container.querySelector('select');
@@ -227,44 +186,24 @@ document.addEventListener("DOMContentLoaded", () => {
                     const guestNameStr = nameField.value.trim();
                     if (!guestNameStr) continue;
                     
-                    // --- EXPLICIT RAW INPUT EXTRACTION ---
-                    const pInputField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]:not([placeholder*="VAS"]):not([placeholder*="Discount"])');
-                    const vInputField = container.querySelector('.vas-fee-input') || container.querySelector('input[placeholder*="VAS"]') || container.querySelectorAll('input[type="number"]')[1];
-                    const dInputField = container.querySelector('.discount-input') || container.querySelector('input[placeholder*="Discount"]') || container.querySelectorAll('input[type="number"]')[2];
+                    const pInputField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
+                    const vInputField = container.querySelectorAll('input[type="number"]')[1];
+                    const dInputField = container.querySelectorAll('input[type="number"]')[2];
 
                     const rawPackagePrice = pInputField ? parseFloat(pInputField.value) || 0 : 0;
                     const manualVasFee = vInputField ? parseFloat(vInputField.value) || 0 : 0;
                     const discountPercentage = dInputField ? parseFloat(dInputField.value) || 0 : 0;
-                    const chosenPackageName = packageSelect ? packageSelect.value : "Ayurveda Treatment Session";
+                    const chosenPackageName = packageSelect ? packageSelect.value : "Ayurveda Session";
                     
-                    // --- OPERATIONAL ADVANCED MATH COMPUTATIONS ---
                     const discountValueAmount = rawPackagePrice * (discountPercentage / 100);
                     const netBaseRevenue = rawPackagePrice - discountValueAmount;
                     const grossCollectedTotal = netBaseRevenue + manualVasFee;
 
-                    // Calculate Introducer Commission systematically
-                    let finalCalculatedCommissionAmount = 0;
-                    if (resolvedIntroducerRecordId) {
-                        if (commissionBasisType === 'PCT') {
-                            // Rule: (Package Price + VAS Fee) * Commission %
-                            finalCalculatedCommissionAmount = (rawPackagePrice + manualVasFee) * (commissionInputAmount / 100);
-                        } else {
-                            // Rule: Fixed flat rate amount direct allocation
-                            finalCalculatedCommissionAmount = commissionInputAmount;
-                        }
-                    }
-
-                    // Create guest profile dynamically on-the-fly
-                    let matchedGuest = await dispatchPostRESTRequestHandshake('Guests', {
-                        "Full Name": guestNameStr
-                    });
-
+                    let matchedGuest = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
                     if (!matchedGuest || !matchedGuest.id) continue;
-                    const guestRecordId = matchedGuest.id;
 
-                    // Write row to Bookings table
                     const bookingFieldsPayload = {
-                        "Guest": [guestRecordId],
+                        "Guest": [matchedGuest.id],
                         "Room": [resolvedAirtableRoomId],
                         "Status": "Pending"
                     };
@@ -273,21 +212,23 @@ document.addEventListener("DOMContentLoaded", () => {
                         bookingFieldsPayload["Introducer"] = [resolvedIntroducerRecordId];
                     }
 
-                    let createdBookingRecord = null;
-                    if (typeof dispatchPostRESTRequestHandshake === 'function') {
-                        createdBookingRecord = await dispatchPostRESTRequestHandshake('Bookings', bookingFieldsPayload);
-                    }
+                    let createdBookingRecord = await dispatchPostRESTRequestHandshake('Bookings', bookingFieldsPayload);
 
                     if (createdBookingRecord && createdBookingRecord.id) {
                         
-                        // 💰 COMMIT BLOCK: Financial Ledgers mapped explicitly to your schema rules
-                        await dispatchPostRESTRequestHandshake('Financial Ledgers', {
+                        const financialPayload = {
                             "Booking Link": [createdBookingRecord.id],
                             "Base Revenue": netBaseRevenue,
                             "VAS Revenue": manualVasFee,
                             "Gross Collected": grossCollectedTotal,
                             "Settlement Type": settlementMethodPathway
-                        });
+                        };
+
+                        // Smart-Typo Verification: Try singular if plural fails
+                        let financialResult = await dispatchPostRESTRequestHandshake('Financial Ledgers', financialPayload);
+                        if (!financialResult) {
+                            await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
+                        }
 
                         collectedReceiptItems.push({
                             bookingId: createdBookingRecord.fields['Booking ID'] || "BK-AURA",
@@ -296,45 +237,38 @@ document.addEventListener("DOMContentLoaded", () => {
                             price: grossCollectedTotal
                         });
 
-                        // 🤝 COMMIT BLOCK: Book to Commissions Ledger only if a partner introduced this guest
                         if (resolvedIntroducerRecordId) {
-                            await dispatchPostRESTRequestHandshake('Commissions Ledger', {
+                            const commissionsPayload = {
                                 "Booking Link": [createdBookingRecord.id],
                                 "Introducer Link": [resolvedIntroducerRecordId],
                                 "Total Volume Base": (rawPackagePrice + manualVasFee),
                                 "Commission Percentage": commissionBasisType === 'PCT' ? parseInt(commissionInputAmount, 10) : 0,
                                 "Payout Status": "Pending"
-                            });
+                            };
+
+                            let commissionResult = await dispatchPostRESTRequestHandshake('Commissions Ledger', commissionsPayload);
+                            if (!commissionResult) {
+                                await dispatchPostRESTRequestHandshake('Commissions Ledgers', commissionsPayload);
+                            }
                         }
                     }
                 }
 
-                // 🖨️ DETAILED THERMAL PRINTER RECEIPT POPUP INITIALIZER
+                // Thermal receipt render loop
                 if (collectedReceiptItems.length > 0) {
                     const printWindow = window.open('', '_blank', 'width=320,height=600');
                     if (printWindow) {
                         printWindow.document.write(`
                             <html>
-                            <body style="font-family:monospace; font-size:12px; padding:15px; color:#111;">
-                                <div style="text-align:center; font-weight:bold; font-size:14px;">ISIWARA AURA AYURVEDA</div>
-                                <div style="text-align:center; font-size:10px; margin-bottom:10px;">Boutique Wellness Center</div>
+                            <body style="font-family:monospace; font-size:12px; padding:15px;">
+                                <div style="text-align:center; font-weight:bold;">ISIWARA AURA AYURVEDA</div>
                                 <hr style="border-top:1px dashed #000;">
-                                <div style="margin-bottom:8px;">Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
-                                <div style="margin-bottom:10px;">Payment Method: ${settlementMethodPathway}</div>
-                                <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                                <div>Method: ${settlementMethodPathway}</div>
+                                <table style="width:100%; font-size:12px;">
                                     ${collectedReceiptItems.map(item => `
-                                        <tr>
-                                            <td colspan="2" style="font-weight:bold; padding-top:4px;">${item.guestName} (${item.bookingId})</td>
-                                        </tr>
-                                        <tr>
-                                            <td style="color:#555;">Calculated Gross Total</td>
-                                            <td style="text-align:right; font-weight:bold; vertical-align:bottom;">රු. ${item.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                                        </tr>
+                                        <tr><td><strong>${item.guestName}</strong></td><td style="text-align:right;">රු. ${item.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
                                     `).join('')}
-                                </table>
-                                <hr style="border-top:1px dashed #000; margin-top:10px;">
-                                <div style="text-align:center; font-size:10px; margin-top:15px; font-weight:bold;">✨ Transaction Matrix Committed ✨</div>
-                                <div style="text-align:center; font-size:9px; color:#666;">Thank you for visiting Isiwara Aura</div>
+                                table>
                             </body>
                             </html>
                         `);
@@ -343,28 +277,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                if (typeof triggerCustomSwalNotification === 'function') {
-                    triggerCustomSwalNotification("POS Engine Clear", "Universal bulk intake balances split, accounted, and allocated safely.", "success");
-                } else {
-                    alert("Success! Universal bulk intake balances split, accounted, and allocated safely.");
-                }
-
-                if (typeof safeCloseModal === 'function') {
-                    safeCloseModal('bulkIntakeModal');
-                } else {
-                    const modalElement = document.getElementById('bulkIntakeModal');
-                    const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                    if (modalInstance) modalInstance.hide();
-                }
-                
+                if (typeof safeCloseModal === 'function') safeCloseModal('bulkIntakeModal');
                 bulkIntakeForm.reset();
-                if (typeof fetchAndRenderMasterScheduleView === 'function') {
-                    await fetchAndRenderMasterScheduleView();
-                }
+                if (typeof fetchAndRenderMasterScheduleView === 'function') await fetchAndRenderMasterScheduleView();
 
             } catch (executionError) {
-                console.error("FULL ERROR:", executionError);
-                alert(executionError.message || JSON.stringify(executionError));
+                console.error("Matrix Processing Error:", executionError);
             }
         };
     }
