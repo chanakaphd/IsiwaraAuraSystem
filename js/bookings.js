@@ -9,7 +9,7 @@ async function fetchAndRenderMasterScheduleView() {
     const tableBody = document.getElementById('data-table-body');
     if (!tableBody) return;
 
-    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 font-monospace small text-muted">Compiling accounting blocks from cloud records...</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 font-monospace small text-muted">Synchronizing active data streams from cloud...</td></tr>`;
     
     try {
         const [bookingsData, financialsData] = await Promise.all([
@@ -31,7 +31,7 @@ async function fetchAndRenderMasterScheduleView() {
             return recordDate.getFullYear() === currentYearValue && recordDate.getMonth() === currentMonthValue;
         });
 
-        // Inject dynamic counts safely into dashboard cards
+        // Inject metrics safely into dashboard summary boxes
         if(document.getElementById('boxMtdGuests')) document.getElementById('boxMtdGuests').innerText = mtdLedgerRecords.length;
         if(document.getElementById('boxMtdTxCount')) document.getElementById('boxMtdTxCount').innerText = activeBookings.length;
         if(document.getElementById('boxMtdUtilRate')) document.getElementById('boxMtdUtilRate').innerText = `${Math.min(98, Math.round(15 + (activeBookings.length * 2.2)))}%`;
@@ -47,7 +47,6 @@ async function fetchAndRenderMasterScheduleView() {
             const guestLabel = fields['Guest Name'] || 'Walk-In Client';
             const currentOperationalStatus = fields['Status'] || 'Completed';
 
-            // Distinct badge configurations matching realized double-entry parameters
             const badgeClass = currentOperationalStatus === 'Completed' || currentOperationalStatus === 'Confirmed' ? 'bg-success' : 'bg-warning';
 
             return `
@@ -66,7 +65,7 @@ async function fetchAndRenderMasterScheduleView() {
         }
 
     } catch (error) {
-        console.error("Dashboard Master Render Interrupted:", error);
+        console.error("Dashboard Core Engine Exception:", error);
         tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-3">⚠️ Stream Alignment Fault. Check system mappings.</td></tr>`;
     }
 }
@@ -104,17 +103,14 @@ function updateLiveIntakeSummaryDisplayLayer() {
         totalDiscountAmount += calculatedDiscountVal;
 
         if (commissionBasisType === 'PCT') {
-            // Rule: (Package Price + VAS Fee) * Commission %
             totalCommissionAmount += (basePackagePrice + manualVasFee) * (commissionInputAmount / 100);
         } else {
-            // Rule: Pro-rated division of the flat currency input across split guest lines
             totalCommissionAmount += commissionInputAmount / containerRows.length;
         }
     });
 
     const finalTotalSettledPaid = (totalGrossPackageValue - totalDiscountAmount) + totalVasAmount;
 
-    // Synchronize full numeric layout blocks directly to the primary label field nodes
     const labelCalculatedSum = document.getElementById('lblBulkTotalCalculation');
     if (labelCalculatedSum) {
         labelCalculatedSum.innerText = `රු. ${finalTotalSettledPaid.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
@@ -144,7 +140,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
     if (bulkIntakeForm) {
         
-        // Dynamic event hooks to ensure real-time rendering as elements update
         bulkIntakeForm.addEventListener('input', updateLiveIntakeSummaryDisplayLayer);
         bulkIntakeForm.addEventListener('change', updateLiveIntakeSummaryDisplayLayer);
 
@@ -219,29 +214,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     const netBaseRevenue = rawPackagePrice - calculatedDiscountAmount;
                     const grossCollectedTotal = netBaseRevenue + manualVasFee;
 
-                    let dynamicCommProRatedValue = 0;
-                    if (resolvedIntroducerRecordId) {
-                        if (commissionBasisType === 'PCT') {
-                            dynamicCommProRatedValue = (rawPackagePrice + manualVasFee) * (commissionInputAmount / 100);
-                        } else {
-                            dynamicCommProRatedValue = commissionInputAmount / containerRows.length;
-                        }
-                    }
-
-                    // 1. Double Entry Step 1: Create Identity Map Link
+                    // 1. Create Guest Profile
                     let guestProfileRecord = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
                     if (!guestProfileRecord || !guestProfileRecord.id) continue;
 
-                    // 2. Double Entry Step 2: Establish Realized Booking Record committed directly as "Completed"
+                    // 2. Create Booking (Set Status directly to Completed)
                     let bookingEntryRecord = await dispatchPostRESTRequestHandshake('Bookings', {
                         "Guest": [guestProfileRecord.id],
                         "Room": [resolvedAirtableRoomId],
-                        "Status": "Completed" // ✅ Instantly verified and finalized at point-of-sale checkout
+                        "Status": "Completed"
                     });
 
                     if (bookingEntryRecord && bookingEntryRecord.id) {
                         
-                        // 3. Double Entry Step 3: Map revenue distribution channels safely inside Financial Ledgers
+                        // 3. Document entries inside Financial Ledgers
                         await dispatchPostRESTRequestHandshake('Financial Ledgers', {
                             "Booking Link": [bookingEntryRecord.id],
                             "Base Revenue": Number(netBaseRevenue) || 0,
@@ -256,20 +242,20 @@ document.addEventListener("DOMContentLoaded", () => {
                             price: grossCollectedTotal
                         });
 
-                        // 4. Double Entry Step 4: Map accounts payable liabilities inside Commissions Ledger flagged as "Pending"
+                        // 4. Map accounts payable liabilities inside Commissions Ledger flagged as Pending
                         if (resolvedIntroducerRecordId) {
                             await dispatchPostRESTRequestHandshake('Commissions Ledger', {
                                 "Booking Link": [bookingEntryRecord.id],
                                 "Introducer Link": [resolvedIntroducerRecordId],
                                 "Total Volume Base": Number(rawPackagePrice + manualVasFee) || 0,
                                 "Commission Percentage": commissionBasisType === 'PCT' ? (parseInt(commissionInputAmount, 10) || 0) : 0,
-                                "Payout Status": "Pending" // ✅ Locked as structural liability item until released by management panels
+                                "Payout Status": "Pending"
                             });
                         }
                     }
                 }
 
-                // 🖨️ ADVANCED INCIDENT COMMITTED RECEIPT VOUCHER (LOGO ENGINE DRIVEN)
+                // 🖨️ ADVANCED THERMAL PRINTER RECEIPT POPUP INJECTION
                 if (collectedReceiptItems.length > 0) {
                     const printWindow = window.open('', '_blank', 'width=340,height=650');
                     if (printWindow) {
@@ -307,15 +293,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                if (typeof safeCloseModal === 'function') safeCloseModal('bulkIntakeModal');
-                bulkIntakeForm.reset();
+                // Close modal via standard Bootstrap utility to bypass openModal constraints
+                const modalEl = document.getElementById('bulkIntakeModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modalInstance.hide();
                 
+                bulkIntakeForm.reset();
                 const widget = document.getElementById('posLiveSummaryWidgetContainer');
                 if (widget) widget.innerHTML = "";
 
-                if (typeof fetchAndRenderMasterScheduleView === 'function') {
-                    await fetchAndRenderMasterScheduleView();
-                }
+                await fetchAndRenderMasterScheduleView();
 
             } catch (executionError) {
                 console.error("Critical POS Exception caught:", executionError);
