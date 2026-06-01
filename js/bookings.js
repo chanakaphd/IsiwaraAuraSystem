@@ -32,7 +32,6 @@ async function fetchAndRenderMasterScheduleView() {
         const currentYearValue = systemCalendarDate.getFullYear();
         const currentMonthValue = systemCalendarDate.getMonth();
 
-        // Safe Month-to-Date extraction (Handles both formulas and standard date formats)
         const mtdLedgerRecords = activeFinancials.filter(record => {
             const tStamp = record.fields['Transaction Timestamp'] || record.createdTime;
             if (!tStamp) return false;
@@ -56,7 +55,6 @@ async function fetchAndRenderMasterScheduleView() {
             mtdGrossCollectedRevenue += (ledger.fields['Gross Collected'] || 0);
         });
 
-        // Update Dashboard Elements Live
         if(document.getElementById('boxMtdGuests')) document.getElementById('boxMtdGuests').innerText = mtdUniqueGuestProfileSet.size;
         if(document.getElementById('boxMtdTxCount')) document.getElementById('boxMtdTxCount').innerText = mtdLedgerRecords.length;
         if(document.getElementById('boxMtdPaidComm')) document.getElementById('boxMtdPaidComm').innerText = `රු. ${mtdTotalCommissionsPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
@@ -85,7 +83,7 @@ async function fetchAndRenderMasterScheduleView() {
 }
 
 /**
- * ⚡ MASTER POS TRACK ENGINE (FORMULA-COMPATIBLE ROUTING)
+ * ⚡ MASTER POS TRACK ENGINE (ROBUST STRING & ATTRIBUTE SELECTORS)
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -129,9 +127,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     const guestNameStr = nameField.value.trim();
                     if (!guestNameStr) continue;
                     
-                    const pInputField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
-                    const vInputField = container.querySelectorAll('input[type="number"]')[1];
-                    const dInputField = container.querySelectorAll('input[type="number"]')[2];
+                    // 🧠 SPECIFIC SELECTOR MATCHING: Resolves index positioning dependency bugs entirely
+                    const pInputField = container.querySelector('.package-price-input') || container.querySelector('[id*="Price"]') || container.querySelector('input[type="number"]');
+                    const vInputField = container.querySelector('.vas-fee-input') || container.querySelector('[id*="Vas"]') || container.querySelector('[placeholder*="VAS"]');
+                    const dInputField = container.querySelector('.discount-input') || container.querySelector('[id*="Discount"]') || container.querySelector('[placeholder*="Discount"]');
 
                     const rawPackagePrice = pInputField ? parseFloat(pInputField.value) || 0 : 0;
                     const manualVasFee = vInputField ? parseFloat(vInputField.value) || 0 : 0;
@@ -140,6 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const discountValueAmount = rawPackagePrice * (discountPercentage / 100);
                     const netBaseRevenue = rawPackagePrice - discountValueAmount;
 
+                    // Direct creation request to Guests table
                     let matchedGuest = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
                     if (!matchedGuest || !matchedGuest.id) continue;
 
@@ -152,8 +152,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (createdBookingRecord && createdBookingRecord.id) {
                         const financialPayload = {
                             "Booking Link": [createdBookingRecord.id],
-                            "Base Revenue": netBaseRevenue,
-                            "VAS Revenue": manualVasFee,
+                            "Base Revenue": Number(netBaseRevenue) || 0,
+                            "VAS Revenue": Number(manualVasFee) || 0,
                             "Settlement Type": settlementMethodPathway
                         };
 
@@ -164,8 +164,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             const commissionsPayload = {
                                 "Booking Link": [createdBookingRecord.id],
                                 "Introducer Link": [resolvedIntroducerRecordId],
-                                "Total Volume Base": (rawPackagePrice + manualVasFee),
-                                "Commission Percentage": commissionBasisType === 'PCT' ? parseInt(commissionInputAmount, 10) : 0,
+                                "Total Volume Base": Number(rawPackagePrice + manualVasFee) || 0,
+                                "Commission Percentage": commissionBasisType === 'PCT' ? (parseInt(commissionInputAmount, 10) || 0) : 0,
                                 "Payout Status": "Pending"
                             };
 
