@@ -127,17 +127,21 @@ function updateLiveIntakeSummaryDisplayLayer() {
 }
 
 /**
- * 🛠️ AUTOMATED DROPDOWN INJECTOR NODE
+ /**
+ * 🛠️ AUTOMATED DROPDOWN INJECTOR NODE (AIRTABLE-JSON FIXED MAP)
+ * Ensures metadata fields populate reliably by digging into the nested fields object
  */
 function safelyForcePopulatePOSDropdownFields() {
-    console.log("📥 Forcing drop-down population loop from live memory caches...");
+    console.log("📥 Parsing nested data objects into option lines...");
 
     // 1. Populate Target Rooms
     const roomSelect = document.getElementById('bulkIntakeRoomSelect');
     if (roomSelect && typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
         roomSelect.innerHTML = cacheRooms.map(r => {
-            const num = r.fields['Room Number'] || 'N/A';
-            const cap = r.fields['Beds Capacity'] || '1';
+            // Airtable nested data extraction path
+            const fieldsObj = r.fields || {};
+            const num = fieldsObj['Room Number'] || 'N/A';
+            const cap = fieldsObj['Beds Capacity'] || '1';
             return `<option value="${num}">Room ${num} (Capacity: ${cap} Beds)</option>`;
         }).join('');
     }
@@ -146,12 +150,13 @@ function safelyForcePopulatePOSDropdownFields() {
     const introSelect = document.getElementById('bulkIntakeIntroducerSelect');
     if (introSelect && typeof cacheIntroducers !== 'undefined' && cacheIntroducers.length > 0) {
         introSelect.innerHTML = cacheIntroducers.map(i => {
-            const name = i.fields['Full Name'] || 'Unknown Partner';
+            // Airtable nested data extraction path
+            const fieldsObj = i.fields || {};
+            const name = fieldsObj['Full Name'] || 'Unknown Partner';
             return `<option value="${name}">${name}</option>`;
         }).join('');
     }
 }
-
 /**
  * ⚡ UNIVERSAL POS SUBMIT ENGINE
  */
