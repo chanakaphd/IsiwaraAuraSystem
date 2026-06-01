@@ -137,7 +137,7 @@ function toggleCommissionAddonLabel() {
 }
 
 /**
- * ⚡ MASTER POS TRACK ENGINE (ADVANCED PRICE FALLBACK RESOLUTION)
+ * ⚡ MASTER POS TRACK ENGINE (ADVANCED MATHEMATICAL MATRIX CONTEXT)
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                // Resolve friendly room selection text to underlying Airtable internal record hash ID string
+                // 1. Resolve room designation mapping to clean record hashes
                 const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
                 if (!selectedRoomFullText) {
                     alert("No room selected.");
@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // Map Introducers channel records handles
+                // 2. Map Introducers channel records handles
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
                 let selectedIntroducerName = "Direct Walk-In";
                 let resolvedIntroducerRecordId = null;
@@ -200,7 +200,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                const commissionInputAmount = document.getElementById('intakeCommValue') ? parseInt(document.getElementById('intakeCommValue').value, 10) || 0 : 0;
+                // Capture global form commission control metrics
+                const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
+                const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
                 
                 const pathwayDropdownElement = document.getElementById('bulkSettlementMethodSelect') || document.getElementById('bulkSettlementMethod');
                 const settlementMethodPathway = pathwayDropdownElement ? pathwayDropdownElement.value : 'Cash';
@@ -216,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 let collectedReceiptItems = [];
 
-                // Process each guest row entry sequentially
+                // 3. Process each guest row entry sequentially
                 for (let container of activeRows) {
                     const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
                     const packageSelect = container.querySelector('.package-select-menu') || container.querySelector('select');
@@ -225,25 +227,33 @@ document.addEventListener("DOMContentLoaded", () => {
                     const guestNameStr = nameField.value.trim();
                     if (!guestNameStr) continue;
                     
-                    // 🧠 MULTI-TARGET PRICING PARSER: Tries multiple selector paths to catch any HTML configuration variation
-                    const targetedInputField = container.querySelector('.package-price-input') || 
-                                              container.querySelector('input[type="number"]') || 
-                                              container.querySelector('.guest-price-input') ||
-                                              container.querySelector('input[name="price"]');
+                    // --- EXPLICIT RAW INPUT EXTRACTION ---
+                    const pInputField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]:not([placeholder*="VAS"]):not([placeholder*="Discount"])');
+                    const vInputField = container.querySelector('.vas-fee-input') || container.querySelector('input[placeholder*="VAS"]') || container.querySelectorAll('input[type="number"]')[1];
+                    const dInputField = container.querySelector('.discount-input') || container.querySelector('input[placeholder*="Discount"]') || container.querySelectorAll('input[type="number"]')[2];
+
+                    const rawPackagePrice = pInputField ? parseFloat(pInputField.value) || 0 : 0;
+                    const manualVasFee = vInputField ? parseFloat(vInputField.value) || 0 : 0;
+                    const discountPercentage = dInputField ? parseFloat(dInputField.value) || 0 : 0;
+                    const chosenPackageName = packageSelect ? packageSelect.value : "Ayurveda Treatment Session";
                     
-                    let packagePriceNum = 0;
-                    if (targetedInputField && targetedInputField.value) {
-                        packagePriceNum = parseFloat(targetedInputField.value) || 0;
-                    } else {
-                        // Fallback: If it's a static text node/span label container instead of an input field
-                        const textLabelFallback = container.querySelector('.price-label') || container.querySelector('.text-success');
-                        if (textLabelFallback) {
-                            packagePriceNum = parseFloat(textLabelFallback.innerText.replace(/[^0-9.]/g, '')) || 0;
+                    // --- OPERATIONAL ADVANCED MATH COMPUTATIONS ---
+                    const discountValueAmount = rawPackagePrice * (discountPercentage / 100);
+                    const netBaseRevenue = rawPackagePrice - discountValueAmount;
+                    const grossCollectedTotal = netBaseRevenue + manualVasFee;
+
+                    // Calculate Introducer Commission systematically
+                    let finalCalculatedCommissionAmount = 0;
+                    if (resolvedIntroducerRecordId) {
+                        if (commissionBasisType === 'PCT') {
+                            // Rule: (Package Price + VAS Fee) * Commission %
+                            finalCalculatedCommissionAmount = (rawPackagePrice + manualVasFee) * (commissionInputAmount / 100);
+                        } else {
+                            // Rule: Fixed flat rate amount direct allocation
+                            finalCalculatedCommissionAmount = commissionInputAmount;
                         }
                     }
 
-                    const chosenPackageName = packageSelect ? packageSelect.value : "Ayurveda Treatment Session";
-                    
                     // Create guest profile dynamically on-the-fly
                     let matchedGuest = await dispatchPostRESTRequestHandshake('Guests', {
                         "Full Name": guestNameStr
@@ -269,10 +279,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                     if (createdBookingRecord && createdBookingRecord.id) {
-                        // 💰 Write corresponding transaction info into Financial Ledgers
+                        
+                        // 💰 COMMIT BLOCK: Financial Ledgers mapped explicitly to your schema rules
                         await dispatchPostRESTRequestHandshake('Financial Ledgers', {
                             "Booking Link": [createdBookingRecord.id],
-                            "Gross Collected": packagePriceNum,
+                            "Base Revenue": netBaseRevenue,
+                            "VAS Revenue": manualVasFee,
+                            "Gross Collected": grossCollectedTotal,
                             "Settlement Type": settlementMethodPathway
                         });
 
@@ -280,23 +293,23 @@ document.addEventListener("DOMContentLoaded", () => {
                             bookingId: createdBookingRecord.fields['Booking ID'] || "BK-AURA",
                             guestName: guestNameStr,
                             service: chosenPackageName,
-                            price: packagePriceNum
+                            price: grossCollectedTotal
                         });
 
-                        // 🤝 Log commission payments directly matching your real Commissions Ledger schema columns
+                        // 🤝 COMMIT BLOCK: Book to Commissions Ledger only if a partner introduced this guest
                         if (resolvedIntroducerRecordId) {
                             await dispatchPostRESTRequestHandshake('Commissions Ledger', {
                                 "Booking Link": [createdBookingRecord.id],
                                 "Introducer Link": [resolvedIntroducerRecordId],
-                                "Total Volume Base": packagePriceNum,
-                                "Commission Percentage": commissionInputAmount,
+                                "Total Volume Base": (rawPackagePrice + manualVasFee),
+                                "Commission Percentage": commissionBasisType === 'PCT' ? parseInt(commissionInputAmount, 10) : 0,
                                 "Payout Status": "Pending"
                             });
                         }
                     }
                 }
 
-                // 🖨️ EMULATED THERMAL PRINTER RECEIPT POPUP INITIALIZER
+                // 🖨️ DETAILED THERMAL PRINTER RECEIPT POPUP INITIALIZER
                 if (collectedReceiptItems.length > 0) {
                     const printWindow = window.open('', '_blank', 'width=320,height=600');
                     if (printWindow) {
@@ -314,13 +327,13 @@ document.addEventListener("DOMContentLoaded", () => {
                                             <td colspan="2" style="font-weight:bold; padding-top:4px;">${item.guestName} (${item.bookingId})</td>
                                         </tr>
                                         <tr>
-                                            <td style="color:#555;">${item.service}</td>
-                                            <td style="text-align:right; font-weight:bold; vertical-align:bottom;">රු. ${item.price.toLocaleString()}</td>
+                                            <td style="color:#555;">Calculated Gross Total</td>
+                                            <td style="text-align:right; font-weight:bold; vertical-align:bottom;">රු. ${item.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                                         </tr>
                                     `).join('')}
                                 </table>
                                 <hr style="border-top:1px dashed #000; margin-top:10px;">
-                                <div style="text-align:center; font-size:10px; margin-top:15px; font-weight:bold;">✨ Counter Allocation Cleared ✨</div>
+                                <div style="text-align:center; font-size:10px; margin-top:15px; font-weight:bold;">✨ Transaction Matrix Committed ✨</div>
                                 <div style="text-align:center; font-size:9px; color:#666;">Thank you for visiting Isiwara Aura</div>
                             </body>
                             </html>
