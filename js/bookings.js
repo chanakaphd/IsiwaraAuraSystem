@@ -39,7 +39,7 @@ async function fetchAndRenderMasterScheduleView() {
         });
 
         const mtdTotalCommissionsPaid = activeCommissions.filter(record => {
-            if (!record.fields['Disbursed Date'] || record.fields['Payout Status'] !== 'Released & Cleared') return false;
+            if (!record.fields['Disbursed Date'] || record.fields['Payout Status'] !== 'Released') return false;
             const disbursementDate = new Date(record.fields['Disbursed Date']);
             return disbursementDate.getFullYear() === currentYearValue && disbursementDate.getMonth() === currentMonthValue;
         }).reduce((aggregatedSum, record) => aggregatedSum + (record.fields['Payout Due Amount'] || 0), 0);
@@ -137,7 +137,7 @@ function toggleCommissionAddonLabel() {
 }
 
 /**
- * ⚡ MASTER POS TRACK ENGINE (FULLY AUTOMATED TRANSACTIONS)
+ * ⚡ MASTER POS TRACK ENGINE (FULLY ALIGNED SCHEMAS)
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -147,6 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
+                // Resolve room designation mapping to clean record hashes
                 const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
                 if (!selectedRoomFullText) {
                     alert("No room selected.");
@@ -171,10 +172,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 
                 if (!resolvedAirtableRoomId) {
-                    alert("Allocation Halted: Local room reference cache is empty.");
+                    alert("Allocation Halted: Room reference cache is empty.");
                     return;
                 }
 
+                // Map Introducers channel records handles
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
                 let selectedIntroducerName = "Direct Walk-In";
                 let resolvedIntroducerRecordId = null;
@@ -198,10 +200,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
-                const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
+                const commissionInputAmount = document.getElementById('intakeCommValue') ? parseInt(document.getElementById('intakeCommValue').value, 10) || 0 : 0;
                 
-                // 🧠 ID SAFE-RESOLVE MATCH: Dynamic fallback matching both your possible element layout selector tags cleanly
                 const pathwayDropdownElement = document.getElementById('bulkSettlementMethodSelect') || document.getElementById('bulkSettlementMethod');
                 const settlementMethodPathway = pathwayDropdownElement ? pathwayDropdownElement.value : 'Cash';
 
@@ -229,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const packagePriceNum = priceField ? parseFloat(priceField.value) || 0 : 0;
                     const chosenPackageName = packageSelect ? packageSelect.value : "Ayurveda Treatment Session";
                     
-                    // Create guest on-the-fly instantly
+                    // Create guest profile dynamically on-the-fly
                     let matchedGuest = await dispatchPostRESTRequestHandshake('Guests', {
                         "Full Name": guestNameStr
                     });
@@ -255,10 +255,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     if (createdBookingRecord && createdBookingRecord.id) {
                         // 💰 SUCCESS: Write corresponding transaction info into Financial Ledgers
+                        // Removed "Transaction Timestamp" because it is an autocalculated Formula field!
                         await dispatchPostRESTRequestHandshake('Financial Ledgers', {
                             "Booking Link": [createdBookingRecord.id],
                             "Gross Collected": packagePriceNum,
-                            "Transaction Timestamp": new Date().toISOString()
+                            "Settlement Type": settlementMethodPathway
                         });
 
                         collectedReceiptItems.push({
@@ -268,23 +269,21 @@ document.addEventListener("DOMContentLoaded", () => {
                             price: packagePriceNum
                         });
 
-                        // 🤝 SUCCESS: Log commission payments targeting your commission logic engine cleanly
-                        if (window.introducerIncentiveEngine) {
-                            await window.introducerIncentiveEngine.createIntroducerRecord(
-                                createdBookingRecord.fields['Booking ID'] || "BK-AURA",
-                                guestRecordId,
-                                selectedIntroducerName,
-                                packagePriceNum,
-                                commissionBasisType,
-                                commissionInputAmount
-                            );
+                        // 🤝 SUCCESS: Log commission payments directly matching your real Commissions Ledger schema columns
+                        if (resolvedIntroducerRecordId) {
+                            await dispatchPostRESTRequestHandshake('Commissions Ledger', {
+                                "Booking Link": [createdBookingRecord.id],
+                                "Introducer Link": [resolvedIntroducerRecordId], // Aligned to 'Introducer Link'
+                                "Total Volume Base": packagePriceNum,
+                                "Commission Percentage": commissionInputAmount, // Aligned to 'Commission Percentage'
+                                "Payout Status": "Pending"
+                            });
                         }
                     }
                 }
 
-                // 🖨️ THERMAL PRINTER RECEIPT POPUP INITIALIZER
+                // 🖨️ EMULATED THERMAL PRINTER RECEIPT POPUP INITIALIZER
                 if (collectedReceiptItems.length > 0) {
-                    console.log("Compiling counter voucher layouts...");
                     const printWindow = window.open('', '_blank', 'width=320,height=600');
                     if (printWindow) {
                         printWindow.document.write(`
@@ -307,7 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     `).join('')}
                                 </table>
                                 <hr style="border-top:1px dashed #000; margin-top:10px;">
-                                <div style="text-align:center; font-size:10px; margin-top:15px; font-weight:bold;">✨ Live Balanced Allocation Clear ✨</div>
+                                <div style="text-align:center; font-size:10px; margin-top:15px; font-weight:bold;">✨ Counter Allocation Cleared ✨</div>
                                 <div style="text-align:center; font-size:9px; color:#666;">Thank you for visiting Isiwara Aura</div>
                             </body>
                             </html>
