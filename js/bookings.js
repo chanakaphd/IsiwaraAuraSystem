@@ -129,30 +129,38 @@ function updateLiveIntakeSummaryDisplayLayer() {
 /**
  /**
  * 🛠️ AUTOMATED DROPDOWN INJECTOR NODE (AIRTABLE-JSON FIXED MAP)
- * Ensures metadata fields populate reliably by digging into the nested fields object
+/**
+ * 🛠️ AUTOMATED DROPDOWN INJECTOR NODE (EXACT AIRTABLE HEADING MATCH)
+ * Maps nested data primitives strictly using your live title-case columns layout.
  */
 function safelyForcePopulatePOSDropdownFields() {
-    console.log("📥 Parsing nested data objects into option lines...");
+    console.log("📥 Parsing title-case data properties into select option fragments...");
 
-    // 1. Populate Target Rooms
+    // 1. Aligned Room Field Mapping Loop
     const roomSelect = document.getElementById('bulkIntakeRoomSelect');
     if (roomSelect && typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
         roomSelect.innerHTML = cacheRooms.map(r => {
-            // Airtable nested data extraction path
             const fieldsObj = r.fields || {};
-            const num = fieldsObj['Room Number'] || 'N/A';
+            
+            // Matches your exact Airtable heading keys verbatim
+            const num = fieldsObj['Room Number']; 
             const cap = fieldsObj['Beds Capacity'] || '1';
+            
+            if (!num) return ''; // Bypasses un-initialized rows cleanly
             return `<option value="${num}">Room ${num} (Capacity: ${cap} Beds)</option>`;
         }).join('');
     }
 
-    // 2. Populate Registered Introducers
+    // 2. Aligned Introducer Partner Field Mapping Loop
     const introSelect = document.getElementById('bulkIntakeIntroducerSelect');
     if (introSelect && typeof cacheIntroducers !== 'undefined' && cacheIntroducers.length > 0) {
         introSelect.innerHTML = cacheIntroducers.map(i => {
-            // Airtable nested data extraction path
             const fieldsObj = i.fields || {};
-            const name = fieldsObj['Full Name'] || 'Unknown Partner';
+            
+            // Matches your exact primary column heading verbatim
+            const name = fieldsObj['Full Name'];
+            
+            if (!name) return '';
             return `<option value="${name}">${name}</option>`;
         }).join('');
     }
