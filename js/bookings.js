@@ -129,8 +129,7 @@ function updateLiveIntakeSummaryDisplayLayer() {
     }
 }
 /**
- /**
- * 🛠️ AUTOMATED DROPDOWN INJECTOR NODE (AIRTABLE-JSON FIXED MAP)
+ 
 /**
  * 🛠️ AUTOMATED DROPDOWN INJECTOR NODE (EXACT AIRTABLE HEADING MATCH)
  * Maps nested data primitives strictly using your live title-case columns layout.
