@@ -12,7 +12,7 @@ class DynamicIntroducerIncentiveEngine {
      * @param {string} commType - Dropdown valuation flag ('LKR' or 'PCT')
      * @param {number} commValue - Numerical split value passed from data form entry
      */
-    createIntroducerRecord(bookingId, guestId, introducerName, packagePrice, commType, commValue) {
+    async createIntroducerRecord(bookingId, guestId, introducerName, packagePrice, commType, commValue) {
         let calculatedIncentiveAmount = 0;
         let auditLabelString = "";
 
@@ -34,24 +34,42 @@ class DynamicIntroducerIncentiveEngine {
             packagePrice: packagePrice,
             incentiveAmount: calculatedIncentiveAmount,
             calculationAuditLog: auditLabelString,
-            status: 'PENDING',
+            status: 'Pending Tracking',
             createdAt: new Date().toISOString()
         };
 
         console.log(`💸 Incentive Accounting Complete: Allocated ${auditLabelString} yielding Total Pay LKR: ${calculatedIncentiveAmount}`);
 
-        // Safe Network Pipeline Dispatch Hook out to Cloud Data Registry
-        if (typeof dispatchPostRESTRequestHandshake === 'function' && localStorage.getItem('BASE_ID')) {
-            dispatchPostRESTRequestHandshake('IntroducerIncentives', {
-                BookingId: bookingId,
-                IntroducerName: introducerName,
-                TotalPackagePrice: packagePrice,
-                CalculatedIncentive: calculatedIncentiveAmount,
-                DistributionModelContext: auditLabelString,
-                Status: 'PENDING'
-            }).catch(networkException => {
-                console.error("Critical Cloud Transaction Abort dropped on Introducer Ledger Matrix sync:", networkException);
-            });
+        // 🔍 DYNAMIC LINK CROSS-REFERENCE RESOLUTION
+        // Look up the unique alphanumeric Airtable Record ID for this introducer profile from local memory cache pools
+        let resolvedIntroducerRecordId = null;
+        if (typeof cacheIntroducers !== 'undefined' && cacheIntroducers.length > 0) {
+            const matchedIntroObj = cacheIntroducers.find(i => i.fields['Full Name'] === introducerName);
+            if (matchedIntroObj) resolvedIntroducerRecordId = matchedIntroObj.id; // Yields "recXXXXXXX"
+        }
+
+        // 🚀 SAFE CLOUD DATA PIPELINE RE-ROUTING
+        // Targets your exact "Commissions Ledger" base table sheet layout
+        if (typeof dispatchPostRESTRequestHandshake === 'function' && resolvedIntroducerRecordId) {
+            
+            const commissionsPayload = {
+                "Total Volume Base": packagePrice,
+                "Payout Due Amount": calculatedIncentiveAmount,
+                "Payout Status": "Pending Tracking"
+            };
+
+            // Wrap relationship connections cleanly inside strict array layouts matching your database settings
+            if (typeof cacheIntroducers !== 'undefined') {
+                commissionsPayload["Introducer Link Profile"] = [resolvedIntroducerRecordId];
+            }
+
+            // Dispatch out over your active REST engine
+            dispatchPostRESTRequestHandshake('Commissions Ledger', commissionsPayload)
+                .catch(networkException => {
+                    console.error("Critical Cloud Transaction Abort dropped on Introducer Ledger Matrix sync:", networkException);
+                });
+        } else {
+            console.warn("Handshake Blocked: Introducer could not be verified in synchronized cache parameters, skipping cloud ledger logging.");
         }
 
         return introducerLedgerRecord;
