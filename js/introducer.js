@@ -40,31 +40,25 @@ class DynamicIntroducerIncentiveEngine {
 
         console.log(`💸 Incentive Accounting Complete: Allocated ${auditLabelString} yielding Total Pay LKR: ${calculatedIncentiveAmount}`);
 
-        // 🔍 DYNAMIC LINK CROSS-REFERENCE RESOLUTION
         // Look up the unique alphanumeric Airtable Record ID for this introducer profile from local memory cache pools
         let resolvedIntroducerRecordId = null;
         if (typeof cacheIntroducers !== 'undefined' && cacheIntroducers.length > 0) {
             const matchedIntroObj = cacheIntroducers.find(i => i.fields['Full Name'] === introducerName);
-            if (matchedIntroObj) resolvedIntroducerRecordId = matchedIntroObj.id; // Yields "recXXXXXXX"
+            if (matchedIntroObj) resolvedIntroducerRecordId = matchedIntroObj.id; 
         }
 
-        // 🚀 SAFE CLOUD DATA PIPELINE RE-ROUTING
-        // Targets your exact "Commissions Ledger" base table sheet layout
+        // Targets your exact "Commissions Ledger" base table sheet layout instead of non-existent variables
         if (typeof dispatchPostRESTRequestHandshake === 'function' && resolvedIntroducerRecordId) {
             
             const commissionsPayload = {
                 "Total Volume Base": packagePrice,
                 "Payout Due Amount": calculatedIncentiveAmount,
-                "Payout Status": "Pending Tracking"
+                "Payout Status": "Pending Tracking",
+                "Introducer Link Profile": [resolvedIntroducerRecordId]
             };
 
-            // Wrap relationship connections cleanly inside strict array layouts matching your database settings
-            if (typeof cacheIntroducers !== 'undefined') {
-                commissionsPayload["Introducer Link Profile"] = [resolvedIntroducerRecordId];
-            }
-
             // Dispatch out over your active REST engine
-            dispatchPostRESTRequestHandshake('Commissions Ledger', commissionsPayload)
+            await dispatchPostRESTRequestHandshake('Commissions Ledger', commissionsPayload)
                 .catch(networkException => {
                     console.error("Critical Cloud Transaction Abort dropped on Introducer Ledger Matrix sync:", networkException);
                 });
