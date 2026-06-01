@@ -137,7 +137,7 @@ function toggleCommissionAddonLabel() {
 }
 
 /**
- * ⚡ MASTER POS TRACK ENGINE (FULLY ALIGNED SCHEMAS)
+ * ⚡ MASTER POS TRACK ENGINE (ADVANCED PRICE FALLBACK RESOLUTION)
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                // Resolve room designation mapping to clean record hashes
+                // Resolve friendly room selection text to underlying Airtable internal record hash ID string
                 const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
                 if (!selectedRoomFullText) {
                     alert("No room selected.");
@@ -219,14 +219,29 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Process each guest row entry sequentially
                 for (let container of activeRows) {
                     const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
-                    const priceField = container.querySelector('.package-price-input') || container.querySelector('input[type="number"]');
                     const packageSelect = container.querySelector('.package-select-menu') || container.querySelector('select');
                     
                     if (!nameField) continue;
                     const guestNameStr = nameField.value.trim();
                     if (!guestNameStr) continue;
                     
-                    const packagePriceNum = priceField ? parseFloat(priceField.value) || 0 : 0;
+                    // 🧠 MULTI-TARGET PRICING PARSER: Tries multiple selector paths to catch any HTML configuration variation
+                    const targetedInputField = container.querySelector('.package-price-input') || 
+                                              container.querySelector('input[type="number"]') || 
+                                              container.querySelector('.guest-price-input') ||
+                                              container.querySelector('input[name="price"]');
+                    
+                    let packagePriceNum = 0;
+                    if (targetedInputField && targetedInputField.value) {
+                        packagePriceNum = parseFloat(targetedInputField.value) || 0;
+                    } else {
+                        // Fallback: If it's a static text node/span label container instead of an input field
+                        const textLabelFallback = container.querySelector('.price-label') || container.querySelector('.text-success');
+                        if (textLabelFallback) {
+                            packagePriceNum = parseFloat(textLabelFallback.innerText.replace(/[^0-9.]/g, '')) || 0;
+                        }
+                    }
+
                     const chosenPackageName = packageSelect ? packageSelect.value : "Ayurveda Treatment Session";
                     
                     // Create guest profile dynamically on-the-fly
@@ -254,8 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                     if (createdBookingRecord && createdBookingRecord.id) {
-                        // 💰 SUCCESS: Write corresponding transaction info into Financial Ledgers
-                        // Removed "Transaction Timestamp" because it is an autocalculated Formula field!
+                        // 💰 Write corresponding transaction info into Financial Ledgers
                         await dispatchPostRESTRequestHandshake('Financial Ledgers', {
                             "Booking Link": [createdBookingRecord.id],
                             "Gross Collected": packagePriceNum,
@@ -269,13 +283,13 @@ document.addEventListener("DOMContentLoaded", () => {
                             price: packagePriceNum
                         });
 
-                        // 🤝 SUCCESS: Log commission payments directly matching your real Commissions Ledger schema columns
+                        // 🤝 Log commission payments directly matching your real Commissions Ledger schema columns
                         if (resolvedIntroducerRecordId) {
                             await dispatchPostRESTRequestHandshake('Commissions Ledger', {
                                 "Booking Link": [createdBookingRecord.id],
-                                "Introducer Link": [resolvedIntroducerRecordId], // Aligned to 'Introducer Link'
+                                "Introducer Link": [resolvedIntroducerRecordId],
                                 "Total Volume Base": packagePriceNum,
-                                "Commission Percentage": commissionInputAmount, // Aligned to 'Commission Percentage'
+                                "Commission Percentage": commissionInputAmount,
                                 "Payout Status": "Pending"
                             });
                         }
