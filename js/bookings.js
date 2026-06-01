@@ -1,12 +1,15 @@
 /**
- * Isiwara Aura - Master Schedule, POS Engine & Dropdown Initializer
+ * Isiwara Aura - Production Operations & POS Accounting Double-Entry Controller
  */
 
+/**
+ * Compiles and renders active operational rows cleanly from cloud maps.
+ */
 async function fetchAndRenderMasterScheduleView() {
     const tableBody = document.getElementById('data-table-body');
     if (!tableBody) return;
 
-    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 font-monospace small text-muted">Compiling accounting blocks from cloud records...</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 font-monospace small text-muted">Synchronizing active data streams from cloud...</td></tr>`;
     
     try {
         const [bookingsData, financialsData] = await Promise.all([
@@ -55,6 +58,10 @@ async function fetchAndRenderMasterScheduleView() {
                 </tr>
             `;
         }).join('');
+
+        if (activeBookings.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-muted">No operational records found.</td></tr>`;
+        }
 
     } catch (error) {
         console.error("Dashboard Render Exception:", error);
@@ -121,10 +128,9 @@ function updateLiveIntakeSummaryDisplayLayer() {
 
 /**
  * 🛠️ AUTOMATED DROPDOWN INJECTOR NODE
- * Ensures metadata fields populate reliably when the modal shifts into focus
  */
 function safelyForcePopulatePOSDropdownFields() {
-    console.log("📥 Syncing global metadata cache with checkout fields...");
+    console.log("📥 Forcing drop-down population loop from live memory caches...");
 
     // 1. Populate Target Rooms
     const roomSelect = document.getElementById('bulkIntakeRoomSelect');
@@ -132,7 +138,7 @@ function safelyForcePopulatePOSDropdownFields() {
         roomSelect.innerHTML = cacheRooms.map(r => {
             const num = r.fields['Room Number'] || 'N/A';
             const cap = r.fields['Beds Capacity'] || '1';
-            return `<option value="${num}">🚪 Room ${num} (Capacity: ${cap} Beds)</option>`;
+            return `<option value="${num}">Room ${num} (Capacity: ${cap} Beds)</option>`;
         }).join('');
     }
 
@@ -141,7 +147,7 @@ function safelyForcePopulatePOSDropdownFields() {
     if (introSelect && typeof cacheIntroducers !== 'undefined' && cacheIntroducers.length > 0) {
         introSelect.innerHTML = cacheIntroducers.map(i => {
             const name = i.fields['Full Name'] || 'Unknown Partner';
-            return `<option value="${name}">👤 ${name}</option>`;
+            return `<option value="${name}">${name}</option>`;
         }).join('');
     }
 }
@@ -151,12 +157,19 @@ function safelyForcePopulatePOSDropdownFields() {
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
+    
+    // Trigger A: Run automated load buffer right when the scripts complete parsing
+    setTimeout(() => {
+        safelyForcePopulatePOSDropdownFields();
+        updateLiveIntakeSummaryDisplayLayer();
+    }, 1500);
+
     if (bulkIntakeForm) {
         
         bulkIntakeForm.addEventListener('input', updateLiveIntakeSummaryDisplayLayer);
         bulkIntakeForm.addEventListener('change', updateLiveIntakeSummaryDisplayLayer);
 
-        // Bootstrap Modal Event Hook: Runs automatically right when the user clicks the open button
+        // Trigger B: Native Modal Bootstrap Interceptor Fallback Hook
         const modalElement = document.getElementById('bulkIntakeModal');
         if (modalElement) {
             modalElement.addEventListener('show.bs.modal', () => {
