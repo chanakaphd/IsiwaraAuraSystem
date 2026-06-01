@@ -335,3 +335,10 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 });
+function toggleCommissionAddonLabel() {
+    const type = document.getElementById('intakeCommType').value;
+    const label = document.getElementById('lblCommValue');
+    if (label) {
+        label.innerText = type === 'LKR' ? 'Commission Value Allocation (රු.)' : 'Commission Percentage Split Rate (%)';
+    }
+}
