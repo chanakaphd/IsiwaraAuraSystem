@@ -4,21 +4,14 @@
 
 /**
  * Orchestrates rendering tasks for the Master Operations view layout dashboard.
- * Pulls operational lines concurrently to establish analytical summaries.
  */
 async function fetchAndRenderMasterScheduleView() {
     const tableBody = document.getElementById('data-table-body');
     if (!tableBody) return;
 
-    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 font-monospace small">Compiling month-to-date accounting blocks from cloud records...</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 font-monospace small">Compiling accounting blocks...</td></tr>`;
     
-    if (!AIRTABLE_API_KEY || !BASE_ID) {
-        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-muted">Sandbox Active. Link Airtable parameters to stream live logs.</td></tr>`;
-        return;
-    }
-
     try {
-        // Fallback-safe initialization pulls
         let financialsData = await fetchAirtableTableRecords('Financial Ledger');
         if (!financialsData || financialsData.length === 0) {
             financialsData = await fetchAirtableTableRecords('Financial Ledgers');
@@ -39,9 +32,11 @@ async function fetchAndRenderMasterScheduleView() {
         const currentYearValue = systemCalendarDate.getFullYear();
         const currentMonthValue = systemCalendarDate.getMonth();
 
+        // Safe Month-to-Date extraction (Handles both formulas and standard date formats)
         const mtdLedgerRecords = activeFinancials.filter(record => {
-            if (!record.fields['Transaction Timestamp']) return false;
-            const recordDate = new Date(record.fields['Transaction Timestamp']);
+            const tStamp = record.fields['Transaction Timestamp'] || record.createdTime;
+            if (!tStamp) return false;
+            const recordDate = new Date(tStamp);
             return recordDate.getFullYear() === currentYearValue && recordDate.getMonth() === currentMonthValue;
         });
 
@@ -61,15 +56,9 @@ async function fetchAndRenderMasterScheduleView() {
             mtdGrossCollectedRevenue += (ledger.fields['Gross Collected'] || 0);
         });
 
-        let computedUtilizationPercentage = 0;
-        if (mtdLedgerRecords.length > 0) {
-            computedUtilizationPercentage = Math.min(98, Math.round(35 + (mtdLedgerRecords.length * 1.8)));
-        }
-
+        // Update Dashboard Elements Live
         if(document.getElementById('boxMtdGuests')) document.getElementById('boxMtdGuests').innerText = mtdUniqueGuestProfileSet.size;
         if(document.getElementById('boxMtdTxCount')) document.getElementById('boxMtdTxCount').innerText = mtdLedgerRecords.length;
-        if(document.getElementById('boxMtdUtilRate')) document.getElementById('boxMtdUtilRate').innerText = `${computedUtilizationPercentage}%`;
-        if(document.getElementById('boxMtdIntCount')) document.getElementById('boxMtdIntCount').innerText = typeof cacheIntroducers !== 'undefined' ? cacheIntroducers.length : 0;
         if(document.getElementById('boxMtdPaidComm')) document.getElementById('boxMtdPaidComm').innerText = `රු. ${mtdTotalCommissionsPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
         tableBody.innerHTML = activeBookings.map(booking => {
@@ -79,80 +68,38 @@ async function fetchAndRenderMasterScheduleView() {
                 `රු. ${(matchingFinancialRow.fields['Gross Collected'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 
                 'රු. 0.00';
 
-            const allocatedRoomLabel = fields['Room Number']?.[0] || 'Standard Treatment Room';
-            const introducerContextLabel = fields['Room Number']?.[1] || 'Direct Walk-In';
-            const currentOperationalStatus = fields['Status'] || 'Pending';
-
             return `
                 <tr class="animate-fade-in">
                     <td><strong>${fields['Booking ID'] || 'BKG-PRX'}</strong></td>
-                    <td>🚪 ${allocatedRoomLabel}</td>
-                    <td>👤 ${introducerContextLabel}</td>
+                    <td>🚪 ${fields['Room Number']?.[0] || 'Standard Room'}</td>
+                    <td>👤 ${fields['Room Number']?.[1] || 'Direct Walk-In'}</td>
                     <td class="fw-bold text-success">${printedRevenueValue}</td>
-                    <td><span class="badge bg-success">${currentOperationalStatus}</span></td>
+                    <td><span class="badge bg-success">${fields['Status'] || 'Pending'}</span></td>
                 </tr>
             `;
         }).join('');
 
     } catch (error) {
-        console.error("Critical rendering exception encountered inside Bookings module:", error);
+        console.error("Dashboard render exception:", error);
     }
 }
 
 /**
- * Secure QR Verification Node Injection Pipeline
- */
-function generateSecureBookingTreatmentQRToken(bookingId, baseDomainUrl = "https://chanakaphd.github.io/IsiwaraAuraSystem") {
-    const safetySalt = "IsiwaraAuraSystemStructuralSecret2026";
-    const verificationChecksum = btoa(`${bookingId}:${safetySalt}`).substring(0, 12);
-    const targetPayloadUrl = `${baseDomainUrl}/treatment-info.html?bookingId=${encodeURIComponent(bookingId)}&tokenVerificationSig=${verificationChecksum}`;
-    return targetPayloadUrl;
-}
-
-function renderSystemAllocationQRGraphicNode(domElementId, bookingId) {
-    const targetElement = document.getElementById(domElementId);
-    if (!targetElement) return;
-    targetElement.innerHTML = ""; 
-    const payloadUrl = generateSecureBookingTreatmentQRToken(bookingId);
-    try {
-        new QRCode(targetElement, {
-            text: payloadUrl,
-            width: 140,
-            height: 140,
-            colorDark: "#1e4620",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
-        });
-    } catch (qrException) {
-        targetElement.innerText = "QR Generation Engine Failed.";
-    }
-}
-
-/**
- * ⚡ MASTER POS TRACK ENGINE (TYPO-PROOF TRANSACTION FALLBACKS)
+ * ⚡ MASTER POS TRACK ENGINE (FORMULA-COMPATIBLE ROUTING)
  */
 document.addEventListener("DOMContentLoaded", () => {
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
     if (bulkIntakeForm) {
         bulkIntakeForm.onsubmit = async (e) => {
             e.preventDefault();
-            console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
-
             try {
                 const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
                 const parsedRoomClean = selectedRoomFullText.split(' ')[0].trim();
                 let resolvedAirtableRoomId = "";
                 
                 if (typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
-                    const matchedRoomObject = cacheRooms.find(r => {
-                        const dbRoomNum = String(r.fields['Room Number'] || '').trim();
-                        return dbRoomNum === parsedRoomClean || dbRoomNum === selectedRoomFullText;
-                    });
+                    const matchedRoomObject = cacheRooms.find(r => String(r.fields['Room Number'] || '').trim() === parsedRoomClean);
                     if (matchedRoomObject) resolvedAirtableRoomId = matchedRoomObject.id; 
-                }
-                
-                if (!resolvedAirtableRoomId && typeof cacheRooms !== 'undefined' && cacheRooms.length > 0) {
-                    resolvedAirtableRoomId = cacheRooms[0].id; 
                 }
 
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
@@ -176,12 +123,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     ? document.querySelectorAll('.dynamic-guest-row') 
                     : document.querySelectorAll('#dynamic-guests-rows-container .row');
 
-                let collectedReceiptItems = [];
-
                 for (let container of activeRows) {
                     const nameField = container.querySelector('.guest-name-input') || container.querySelector('input[type="text"]');
-                    const packageSelect = container.querySelector('.package-select-menu') || container.querySelector('select');
-                    
                     if (!nameField) continue;
                     const guestNameStr = nameField.value.trim();
                     if (!guestNameStr) continue;
@@ -193,49 +136,29 @@ document.addEventListener("DOMContentLoaded", () => {
                     const rawPackagePrice = pInputField ? parseFloat(pInputField.value) || 0 : 0;
                     const manualVasFee = vInputField ? parseFloat(vInputField.value) || 0 : 0;
                     const discountPercentage = dInputField ? parseFloat(dInputField.value) || 0 : 0;
-                    const chosenPackageName = packageSelect ? packageSelect.value : "Ayurveda Session";
                     
                     const discountValueAmount = rawPackagePrice * (discountPercentage / 100);
                     const netBaseRevenue = rawPackagePrice - discountValueAmount;
-                    const grossCollectedTotal = netBaseRevenue + manualVasFee;
 
                     let matchedGuest = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
                     if (!matchedGuest || !matchedGuest.id) continue;
 
-                    const bookingFieldsPayload = {
+                    let createdBookingRecord = await dispatchPostRESTRequestHandshake('Bookings', {
                         "Guest": [matchedGuest.id],
                         "Room": [resolvedAirtableRoomId],
                         "Status": "Pending"
-                    };
-
-                    if (resolvedIntroducerRecordId) {
-                        bookingFieldsPayload["Introducer"] = [resolvedIntroducerRecordId];
-                    }
-
-                    let createdBookingRecord = await dispatchPostRESTRequestHandshake('Bookings', bookingFieldsPayload);
+                    });
 
                     if (createdBookingRecord && createdBookingRecord.id) {
-                        
                         const financialPayload = {
                             "Booking Link": [createdBookingRecord.id],
                             "Base Revenue": netBaseRevenue,
                             "VAS Revenue": manualVasFee,
-                            "Gross Collected": grossCollectedTotal,
                             "Settlement Type": settlementMethodPathway
                         };
 
-                        // Smart-Typo Verification: Try singular if plural fails
-                        let financialResult = await dispatchPostRESTRequestHandshake('Financial Ledgers', financialPayload);
-                        if (!financialResult) {
-                            await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
-                        }
-
-                        collectedReceiptItems.push({
-                            bookingId: createdBookingRecord.fields['Booking ID'] || "BK-AURA",
-                            guestName: guestNameStr,
-                            service: chosenPackageName,
-                            price: grossCollectedTotal
-                        });
+                        let finRes = await dispatchPostRESTRequestHandshake('Financial Ledgers', financialPayload);
+                        if (!finRes) await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
 
                         if (resolvedIntroducerRecordId) {
                             const commissionsPayload = {
@@ -246,34 +169,9 @@ document.addEventListener("DOMContentLoaded", () => {
                                 "Payout Status": "Pending"
                             };
 
-                            let commissionResult = await dispatchPostRESTRequestHandshake('Commissions Ledger', commissionsPayload);
-                            if (!commissionResult) {
-                                await dispatchPostRESTRequestHandshake('Commissions Ledgers', commissionsPayload);
-                            }
+                            let commRes = await dispatchPostRESTRequestHandshake('Commissions Ledger', commissionsPayload);
+                            if (!commRes) await dispatchPostRESTRequestHandshake('Commissions Ledgers', commissionsPayload);
                         }
-                    }
-                }
-
-                // Thermal receipt render loop
-                if (collectedReceiptItems.length > 0) {
-                    const printWindow = window.open('', '_blank', 'width=320,height=600');
-                    if (printWindow) {
-                        printWindow.document.write(`
-                            <html>
-                            <body style="font-family:monospace; font-size:12px; padding:15px;">
-                                <div style="text-align:center; font-weight:bold;">ISIWARA AURA AYURVEDA</div>
-                                <hr style="border-top:1px dashed #000;">
-                                <div>Method: ${settlementMethodPathway}</div>
-                                <table style="width:100%; font-size:12px;">
-                                    ${collectedReceiptItems.map(item => `
-                                        <tr><td><strong>${item.guestName}</strong></td><td style="text-align:right;">රු. ${item.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
-                                    `).join('')}
-                                table>
-                            </body>
-                            </html>
-                        `);
-                        printWindow.document.close();
-                        setTimeout(() => { printWindow.print(); }, 500);
                     }
                 }
 
@@ -282,7 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (typeof fetchAndRenderMasterScheduleView === 'function') await fetchAndRenderMasterScheduleView();
 
             } catch (executionError) {
-                console.error("Matrix Processing Error:", executionError);
+                console.error("POS Matrix Error:", executionError);
             }
         };
     }
