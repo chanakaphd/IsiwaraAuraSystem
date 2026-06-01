@@ -16,13 +16,11 @@ class DynamicIntroducerIncentiveEngine {
         let calculatedIncentiveAmount = 0;
         let auditLabelString = "";
 
-        // Core Mathematical Resolution Routing
         if (commType === 'PCT') {
             const percentageFactor = parseFloat(commValue) / 100;
             calculatedIncentiveAmount = packagePrice * percentageFactor;
             auditLabelString = `${commValue}% Variable Percentage Split Model`;
         } else {
-            // Default Fallback: Static Currency Allocation Value (LKR Rupee Mode)
             calculatedIncentiveAmount = parseFloat(commValue);
             auditLabelString = `රු. ${calculatedIncentiveAmount.toLocaleString()} Fixed Flat Rate Split Model`;
         }
@@ -34,36 +32,35 @@ class DynamicIntroducerIncentiveEngine {
             packagePrice: packagePrice,
             incentiveAmount: calculatedIncentiveAmount,
             calculationAuditLog: auditLabelString,
-            status: 'Pending Tracking',
+            status: 'Pending',
             createdAt: new Date().toISOString()
         };
 
-        console.log(`💸 Incentive Accounting Complete: Allocated ${auditLabelString} yielding Total Pay LKR: ${calculatedIncentiveAmount}`);
+        console.log(`💸 Incentive Accounting Complete: Allocated ${auditLabelString}`);
 
-        // Look up the unique alphanumeric Airtable Record ID for this introducer profile from local memory cache pools
+        // Resolve text name to Airtable record ID
         let resolvedIntroducerRecordId = null;
         if (typeof cacheIntroducers !== 'undefined' && cacheIntroducers.length > 0) {
             const matchedIntroObj = cacheIntroducers.find(i => i.fields['Full Name'] === introducerName);
             if (matchedIntroObj) resolvedIntroducerRecordId = matchedIntroObj.id; 
         }
 
-        // Targets your exact "Commissions Ledger" base table sheet layout instead of non-existent variables
+        // Direct mapping to your physical Commissions Ledger schema columns
         if (typeof dispatchPostRESTRequestHandshake === 'function' && resolvedIntroducerRecordId) {
             
+            // Core database schema field alignment block
             const commissionsPayload = {
                 "Total Volume Base": packagePrice,
-                "Payout Due Amount": calculatedIncentiveAmount,
-                "Payout Status": "Pending Tracking",
-                "Introducer Link Profile": [resolvedIntroducerRecordId]
+                "Commission Percentage": parseInt(commValue, 10) || 0, // Maps to Integer
+                "Payout Status": "Pending",
+                "Introducer Link": [resolvedIntroducerRecordId] // Maps to Link to Introducers array
             };
 
-            // Dispatch out over your active REST engine
-            await dispatchPostRESTRequestHandshake('Commissions Ledger', commissionsPayload)
+            // Safely background logs into the table
+            dispatchPostRESTRequestHandshake('Commissions Ledger', commissionsPayload)
                 .catch(networkException => {
-                    console.error("Critical Cloud Transaction Abort dropped on Introducer Ledger Matrix sync:", networkException);
+                    console.error("Cloud Transaction Abort dropped on Introducer Ledger sync:", networkException);
                 });
-        } else {
-            console.warn("Handshake Blocked: Introducer could not be verified in synchronized cache parameters, skipping cloud ledger logging.");
         }
 
         return introducerLedgerRecord;
