@@ -147,7 +147,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("🚀 Initializing Universal Bulk Intake Processing Engine...");
 
             try {
-                // Resolve friendly room selection text to underlying Airtable internal record hash ID string
                 const selectedRoomFullText = document.getElementById('bulkIntakeRoomSelect').value;
                 if (!selectedRoomFullText) {
                     alert("No room selected.");
@@ -176,7 +175,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
-                // Map Introducers channel records handles
                 const introducerType = document.getElementById('bulkIntakeIntroducerType').value;
                 let selectedIntroducerName = "Direct Walk-In";
                 let resolvedIntroducerRecordId = null;
@@ -202,7 +200,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const commissionBasisType = document.getElementById('intakeCommType') ? document.getElementById('intakeCommType').value : 'LKR';
                 const commissionInputAmount = document.getElementById('intakeCommValue') ? parseFloat(document.getElementById('intakeCommValue').value) || 0 : 0;
-                const settlementMethodPathway = document.getElementById('bulkSettlementMethod') ? document.getElementById('bulkSettlementMethod').value : 'Cash';
+                
+                // 🧠 ID SAFE-RESOLVE MATCH: Dynamic fallback matching both your possible element layout selector tags cleanly
+                const pathwayDropdownElement = document.getElementById('bulkSettlementMethodSelect') || document.getElementById('bulkSettlementMethod');
+                const settlementMethodPathway = pathwayDropdownElement ? pathwayDropdownElement.value : 'Cash';
 
                 const activeRows = document.querySelectorAll('.dynamic-guest-row').length > 0 
                     ? document.querySelectorAll('.dynamic-guest-row') 
@@ -257,7 +258,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         await dispatchPostRESTRequestHandshake('Financial Ledgers', {
                             "Booking Link": [createdBookingRecord.id],
                             "Gross Collected": packagePriceNum,
-                            "Settlement Type": settlementMethodPathway,
                             "Transaction Timestamp": new Date().toISOString()
                         });
 
@@ -268,7 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             price: packagePriceNum
                         });
 
-                        // 🤝 SUCCESS: Log commission payments targeting your commission logic engine
+                        // 🤝 SUCCESS: Log commission payments targeting your commission logic engine cleanly
                         if (window.introducerIncentiveEngine) {
                             await window.introducerIncentiveEngine.createIntroducerRecord(
                                 createdBookingRecord.fields['Booking ID'] || "BK-AURA",
@@ -282,7 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
 
-                // 🖨️ EMULATED THERMAL PRINTER RECEIPT POPUP INITIALIZER
+                // 🖨️ THERMAL PRINTER RECEIPT POPUP INITIALIZER
                 if (collectedReceiptItems.length > 0) {
                     console.log("Compiling counter voucher layouts...");
                     const printWindow = window.open('', '_blank', 'width=320,height=600');
