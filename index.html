@@ -6,6 +6,17 @@
     <title>Isiwara Aura | Enterprise Management Architecture</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Modern App-Style POS Interface Theme Extensions */
+        .bg-gradient-dark { background: linear-gradient(145deg, #1e222b, #14171c); }
+        .bg-black { background-color: #0b0d10 !important; }
+        .pos-step-card { box-shadow: 0 8px 24px rgba(0,0,0,0.3); transition: all 0.2s ease-in-out; border: 1px solid #2d323f !important; }
+        .pos-step-card:hover { border-color: #3b4252 !important; }
+        .touch-control:focus { background-color: #000; color: #fff; box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25); }
+        #dynamic-guests-rows-container::-webkit-scrollbar { width: 6px; }
+        #dynamic-guests-rows-container::-webkit-scrollbar-thumb { background-color: #3b4252; border-radius: 3px; }
+        .pos-sidebar-monitor { position: sticky; top: 24px; }
+    </style>
 </head>
 <body>
 
@@ -67,6 +78,7 @@
 
     <div class="container-fluid">
         <div class="row">
+            
             <nav class="col-md-2 d-none d-md-block sidebar">
                 <h4>ISIWARA AURA</h4>
                 <div class="nav flex-column">
@@ -84,8 +96,7 @@
                 <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
                     <h2 id="view-title" class="fw-bold text-success">Reception Dashboard</h2>
                     <div>
-                        <!-- Native Bootstrap Trigger (Bypasses Script Compile Breaks) -->
-<button class="btn btn-copper fw-bold shadow-sm me-2" type="button" data-bs-toggle="modal" data-bs-target="#Modal">⚡ Universal Bulk Intake</button>
+                        <button class="btn btn-copper fw-bold shadow-sm me-2" type="button" data-bs-toggle="modal" data-bs-target="#Modal">⚡ Open Touch POS Terminal</button>
                         <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()">Logout</button>
                     </div>
                 </header>
@@ -138,9 +149,9 @@
                         <div class="table-responsive">
                             <table class="table table-hover align-middle">
                                 <thead class="table-light">
-                                    <tr><th>Commission ID</th><th>Introducer Link Profile</th><th>Total Volume Base</th><th>Rate %</th><th>Payout Due Amount</th><th>Payout Status</th><th>Action Execution</th></tr>
+                                    <tr><th>Commission ID</th><th>Introducer Link Profile</th><th>Total Volume Base</th><th>Rate %</th><th>Payout Due Amount</th><th>Payout Status</th></tr>
                                 </thead>
-                                <tbody id="commissions-table-body"></tbody>
+                                <tbody id="introducer-ledger-table-body"></tbody>
                             </table>
                         </div>
                     </div>
@@ -150,6 +161,11 @@
                     <div class="d-flex justify-content-between align-items-center mb-3 gap-2 no-print">
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-outline-dark fw-bold" onclick="exportDataGridToExcelCSV('financials-table-export-target', 'Financial_Ledgers')">📥 Export CSV Spreadsheet</button>
+                        </div>
+                        <div class="d-flex gap-4 align-items-center bg-white border px-3 py-1 rounded shadow-sm">
+                            <div class="small fw-bold text-muted">Gross MTD: <span id="metricGrossCollected" class="text-success fw-bold">0.00</span></div>
+                            <div class="small fw-bold text-muted">Comm MTD: <span id="metricCommissionOutflow" class="text-info fw-bold">0.00</span></div>
+                            <div class="small fw-bold text-muted">Net House MTD: <span id="metricNetHouseRevenue" class="text-primary fw-bold">0.00</span></div>
                         </div>
                         <button class="btn btn-danger fw-bold" onclick="triggerDayEndProcessSequenceClosure()">🔒 RUN DAY END LOCK PROCESS</button>
                     </div>
@@ -221,121 +237,146 @@
         </div>
     </div>
 
-   <div class="modal fade" id="Modal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-fullscreen">
-        <div class="modal-content border-0">
-            <div class="modal-header text-white" style="background: linear-gradient(135deg, var(--primary-green) 0%, #0d3c11 100%);">
-                <div class="d-flex justify-content-between align-items-center w-100 me-3">
-                    <h5 class="modal-title fw-bold">🏺 Enterprise Multi-Guest Checkout Split Allocation Engine POS</h5>
-                    <div class="d-flex align-items-center gap-3 bg-white text-dark py-1 px-3 rounded shadow-sm">
-                        <span class="small fw-bold text-muted">Invoicing Output Standard:</span>
-                        <div class="form-check form-check-inline mb-0">
-                            <input class="form-check-input" type="radio" name="currencySelectionNode" id="curLKR" value="LKR" onchange="calculateAggregatedBulkInvoicedSum()" checked>
-                            <label class="form-check-label small fw-bold" for="curLKR">රු LKR Print</label>
-                        </div>
-                        <div class="form-check form-check-inline mb-0">
-                            <input class="form-check-input" type="radio" name="currencySelectionNode" id="curUSD" value="USD" onchange="calculateAggregatedBulkInvoicedSum()">
-                            <label class="form-check-label small fw-bold" for="curUSD">$ USD Print</label>
+    <div class="modal fade" id="Modal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content border-0 bg-black">
+                <div class="modal-header text-white px-4 py-3 border-secondary" style="background: linear-gradient(135deg, #198754 0%, #0d3c11 100%); border-bottom-width: 1px;">
+                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                        <h5 class="modal-title fw-bold text-uppercase tracking-wider">🏺 Enterprise Touch-Screen Checkout POS Terminal</h5>
+                        <div class="d-flex align-items-center gap-3 bg-dark text-white py-2 px-3 rounded shadow-sm border border-secondary">
+                            <span class="small fw-bold text-muted text-uppercase">Currency Output Layout Standard:</span>
+                            <div class="form-check form-check-inline mb-0">
+                                <input class="form-check-input" type="radio" name="currencySelectionNode" id="curLKR" value="LKR" checked>
+                                <label class="form-check-label small fw-bold" for="curLKR">රු LKR Print</label>
+                            </div>
                         </div>
                     </div>
+                    <button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('Modal')"></button>
                 </div>
-                <button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('Modal')"></button>
-            </div>
 
-            <div class="modal-body bg-light p-4">
-                <form id="bulkIntakeForm">
-                    
-                    <div class="row g-3 mb-4 card p-3 border-0 shadow-sm mx-0 bg-white">
-                        <h6 class="fw-bold text-success mb-1">1. Spatial Room Unit Selection & Intermediary Mapping</h6>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Select Active Physical Target Room Location</label>
-                            <select id="bulkIntakeRoomSelect" class="form-select form-select-sm" onchange="verifyRoomBedCapacityConstraints()" required></select>
-                            <div id="room-capacity-alert" class="form-text text-danger fw-bold small mt-1"></div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold">Introducer Track Node</label>
-                            <select id="bulkIntakeIntroducerType" class="form-select form-select-sm" onchange="toggleIntroducerVisibilityFields()">
-                                <option value="Direct">Direct Walk-In (No Channel Fees)</option>
-                                <option value="Existing">Link Registered Existing Introducer</option>
-                                <option value="New">Register New Custom Introducer</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3" id="section-existing-introducer" style="display:none;">
-                            <label class="form-label small fw-bold">Select Active Active Introducer Partner</label>
-                            <select id="bulkIntakeIntroducerSelect" class="form-select form-select-sm"></select>
-                        </div>
+                <div class="modal-body p-4 text-white" style="background-color: #101216;">
+                    <form id="bulkIntakeForm">
+                        <div class="container-fluid px-0">
+                            <div class="row g-4">
+                                
+                                <div class="col-lg-8 col-md-7">
+                                    
+                                    <div class="pos-step-card p-4 bg-gradient-dark rounded-3 mb-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <span class="badge bg-success me-2 fs-6">1</span>
+                                            <h6 class="m-0 text-uppercase tracking-wider fw-bold">Spatial Room Target Selection</h5>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label text-muted small fw-bold">Select Active Physical Target Room Location</label>
+                                            <select id="bulkIntakeRoomSelect" class="form-select form-select-lg bg-black text-white border-secondary touch-control py-3" required>
+                                                </select>
+                                        </div>
+                                    </div>
 
-                       <div id="conditionalCommissionWrapper" style="display: none;">
-    <div class="row g-2 mt-2">
-        <div class="col-md-6">
-            <label class="form-label small text-muted">Commission Type</label>
-            <select id="intakeCommType" class="form-select bg-dark text-white border-secondary">
-                <option value="LKR">Fixed Amount (LKR)</option>
-                <option value="PCT">Percentage Rate (%)</option>
-            </select>
-        </div>
-        <div class="col-md-6">
-            <label id="lblCommValue" class="form-label small text-muted">Commission Allocation Value</label>
-            <input type="number" id="intakeCommValue" class="form-control bg-dark text-white border-secondary" value="0" min="0">
-        </div>
-    </div>
-</div>
+                                    <div class="pos-step-card p-4 bg-gradient-dark rounded-3 mb-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-success me-2 fs-6">2</span>
+                                                <h6 class="m-0 text-uppercase tracking-wider fw-bold">Dynamic Guest Sub-allocations Matrix</h5>
+                                            </div>
+                                            <button type="button" onclick="appendNewGuestAllocationRow()" class="btn btn-success px-4 py-2 fw-bold shadow-sm text-uppercase btn-sm">
+                                                ➕ Append Guest Entry Splitting Row (+)
+                                            </button>
+                                        </div>
+                                        
+                                        <div id="dynamic-guests-rows-container" style="max-height: 420px; overflow-y: auto;">
+                                            <div class="row g-2 align-items-end dynamic-guest-row bg-black p-3 rounded-3 mb-2 border border-dark">
+                                                <div class="col-md-4">
+                                                    <label class="form-label text-muted small fw-bold">Guest Full Name</label>
+                                                    <input type="text" class="form-control bg-dark text-white border-secondary py-2 touch-control" placeholder="Enter full name..." required>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label text-muted small fw-bold">Treatment Price (රු.)</label>
+                                                    <input type="number" class="form-control bg-dark text-white border-secondary py-2 package-price-input touch-control" value="0" min="0" step="100">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label text-muted small fw-bold">VAS Fee (රු.)</label>
+                                                    <input type="number" class="form-control bg-dark text-white border-secondary py-2 vas-fee-input touch-control" value="0" min="0" step="100">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label text-muted small fw-bold">Discount (%)</label>
+                                                    <input type="number" class="form-control bg-dark text-white border-secondary py-2 discount-input touch-control" value="0" min="0" max="100">
+                                                </div>
+                                                <div class="col-md-2 text-end">
+                                                    <button type="button" onclick="this.closest('.dynamic-guest-row').remove(); updateLiveIntakeSummaryDisplayLayer();" class="btn btn-outline-danger w-100 py-2 btn-sm text-uppercase fw-bold">
+                                                        Drop Row
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                    <div id="section-new-introducer" class="row g-2 mb-4 card p-3 border-0 shadow-sm mx-0 bg-white text-dark" style="display:none;">
-                        <h6 class="fw-bold text-warning mb-2">New Introducer Registration Parameters</h6>
-                        <div class="col-md-3"><label class="small fw-bold mb-1">Full Legal Name</label><input type="text" id="newIntroFullName" class="form-control form-control-sm"></div>
-                        <div class="col-md-2"><label class="small fw-bold mb-1">Calling Name</label><input type="text" id="newIntroCallingName" class="form-control form-control-sm"></div>
-                        <div class="col-md-3"><label class="small fw-bold mb-1">NIC Identification Code</label><input type="text" id="newIntroNIC" class="form-control form-control-sm"></div>
-                        <div class="col-md-4"><label class="small fw-bold mb-1">Physical Address Location</label><input type="text" id="newIntroAddress" class="form-control form-control-sm"></div>
-                    </div>
+                                    <div class="pos-step-card p-4 bg-gradient-dark rounded-3 mb-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <span class="badge bg-success me-2 fs-6">3</span>
+                                            <h6 class="m-0 text-uppercase tracking-wider fw-bold">Introducer Track Node</h5>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label text-muted small fw-bold">Select Active Active Introducer Partner</label>
+                                            <select id="bulkIntakeIntroducerSelect" class="form-select form-select-lg bg-black text-white border-secondary touch-control py-3">
+                                                </select>
+                                        </div>
 
-                    <div class="card p-3 border-0 shadow-sm mb-4 bg-white">
-                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-                            <h6 class="fw-bold text-success mb-0">2. Dynamic Guest Sub-allocations Splits Matrix</h6>
-                            <button type="button" class="btn btn-sm btn-outline-success fw-bold" onclick="addNewGuestAllocationRowMarkup()">➕ Append Guest Entry Splitting Row (+)</button>
-                        </div>
-                        <div id="dynamic-guests-rows-container"></div>
-                    </div>
-
-                    <div class="card p-3 bg-dark text-white border-0 shadow">
-                        <h6 class="fw-bold text-warning border-bottom pb-2 mb-3">3. Final Consolidated Point of Sale Settlement Confirmation</h6>
-                        
-                        <div class="row g-3 align-items-center mb-3">
-                            <div class="col-md-4">
-                                <label class="small text-white-50 mb-2">Settlement Method Pathway Choice</label>
-                                <select id="bulkSettlementMethod" class="form-select bg-dark text-white border-secondary" required>
-                                    <option value="Cash">Cash Layout</option>
-                                    <option value="Card">Visa / MasterCard Terminal</option>
-                                    <option value="Transfer">Bank Wire Transfer</option>
-                                </select>
-                            </div>
-                            <div class="col-md-8">
-                                <div class="p-3 border border-dashed rounded text-center border-warning bg-opacity-10 bg-warning">
-                                    <span class="small text-white-50 text-uppercase tracking-wider">Aggregated Total Liabilities Settlement Price</span><br>
-                                    <h2 class="fw-bold text-warning mb-0 mt-1" id="lblBulkTotalCalculation">රු. 0.00</h2>
+                                        <div id="conditionalCommissionWrapper" class="mt-3 p-3 bg-black rounded-3 border border-secondary" style="display: none;">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small text-muted fw-bold">Commission Calculation Basis Pathway</label>
+                                                    <select id="intakeCommType" onchange="toggleCommissionAddonLabel()" class="form-select bg-dark text-white border-secondary py-2 touch-control">
+                                                        <option value="LKR">Fixed Cut Value Allocation (LKR)</option>
+                                                        <option value="PCT">Percentage Split Rate (%)</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label id="lblCommValue" class="form-label small text-muted fw-bold">Commission Allocation Value</label>
+                                                    <input type="number" id="intakeCommValue" class="form-control bg-dark text-white border-secondary py-2 touch-control" value="0" min="0">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                <div class="col-lg-4 col-md-5">
+                                    <div class="pos-sidebar-monitor">
+                                        
+                                        <div id="posLiveSummaryWidgetContainer"></div>
+
+                                        <div class="pos-step-card p-4 bg-gradient-dark rounded-3 mt-4">
+                                            <div class="mb-4">
+                                                <label class="form-label text-muted small text-uppercase tracking-wider fw-bold mb-2">Settlement Method Pathway Choice</label>
+                                                <select id="bulkSettlementMethod" class="form-select form-select-lg bg-success text-white border-0 fw-bold py-3 text-center touch-control fs-5">
+                                                    <option value="Cash">💵 CASH SETTLEMENT</option>
+                                                    <option value="Card">💳 CREDIT / DEBIT CARD</option>
+                                                    <option value="Transfer">🏦 DIRECT WIRE TRANSFER</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="row g-2">
+                                                <div class="col-4">
+                                                    <button type="button" class="btn btn-outline-secondary w-100 py-3 text-uppercase fw-bold text-white border-secondary small btn-lg" data-bs-dismiss="modal">Cancel</button>
+                                                </div>
+                                                <div class="col-8">
+                                                    <button type="submit" id="btnSubmitBulkIntake" class="btn btn-primary btn-lg w-100 py-3 text-uppercase fw-bold shadow tracking-wide fs-5">
+                                                        ⚡ Execute POS
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
-
-                        <!-- 1. Real-Time Cashier Verification Summary Widget Holder -->
-                        <div class="row mx-0 px-0">
-                            <div class="col-12 px-0">
-                                <div id="posLiveSummaryWidgetContainer"></div>
-                            </div>
-                        </div>
-
-                        <!-- 2. Dual Action POS Execution Buttons -->
-                        <div class="d-flex justify-content-end gap-3 border-top border-secondary pt-3 mt-3">
-                            <button type="button" class="btn btn-outline-light px-4 py-2 font-monospace btn-sm text-uppercase fw-bold" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Cancel</button>
-                            <button type="submit" id="btnSubmitBulkIntake" class="btn btn-success px-5 py-2 font-monospace btn-sm text-uppercase fw-bold"><i class="bi bi-check-all"></i> Execute POS</button>
-                        </div>
-                    </div>
-
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
     <div class="modal fade" id="editGuestModal" data-bs-backdrop="static" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-success text-white"><h5 class="modal-title fw-bold">Update Client Parameters Profile</h5><button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('editGuestModal')"></button></div><div class="modal-body"><form id="editGuestForm"><input type="hidden" id="editGuestRecordId"><div class="mb-2"><label class="small fw-bold">Full Identity Name</label><input type="text" id="editGuestFullName" class="form-control form-control-sm" required></div><div class="mb-2"><label class="small fw-bold">Select Country Origin</label><select id="editGuestCountrySelect" class="form-select form-select-sm" onchange="patchGuestCountryDialCodeMapping()"></select></div><div class="mb-2"><label class="small fw-bold">Phone Contact Number</label><input type="tel" id="editGuestPhone" class="form-control form-control-sm" required></div><div class="mb-2"><label class="small fw-bold">Email Address File</label><input type="email" id="editGuestEmail" class="form-control form-control-sm"></div><div class="mb-3"><label class="small fw-bold">Hotel / Staying Place</label><input type="text" id="editGuestHotel" class="form-control form-control-sm"></div><button type="submit" class="btn btn-success w-100 fw-bold btn-sm">Commit Changes Profile</button></form></div></div></div></div>
     <div class="modal fade" id="addTreatmentModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-success text-white"><h5>Create Service Menu Item</h5><button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('addTreatmentModal')"></button></div><div class="modal-body"><form id="treatmentForm"><div class="mb-3"><label class="form-label">Treatment Name</label><input type="text" id="newTreatmentName" class="form-control" required></div><div class="row g-2 mb-3"><div class="col-6"><label class="form-label">Price (LKR රු.)</label><input type="number" id="newTreatmentPrice" class="form-control" required></div><div class="col-6"><label class="form-label">Duration in Minutes</label><input type="number" id="newTreatmentDuration" class="form-control" required value="60"></div></div><button type="submit" class="btn btn-success w-100 fw-bold">Commit Menu Item</button></form></div></div></div></div>
@@ -380,18 +421,15 @@
     <div class="modal fade" id="addIntroModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-success text-white"><h5>Register Independent Introducer</h5><button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('addIntroModal')"></button></div><div class="modal-body"><form id="introForm"><div class="mb-2"><label class="small fw-bold">Full Legal Name</label><input type="text" id="adminIntroFullName" class="form-control form-control-sm" required></div><div class="mb-2"><label class="small fw-bold">NIC Number Code</label><input type="text" id="adminIntroNIC" class="form-control form-control-sm" required></div><div class="mb-2"><label class="small fw-bold">Physical Address Line Location</label><input type="text" id="adminIntroAddress" class="form-control form-control-sm"></div><button type="submit" class="btn btn-sm btn-success w-100 mt-2 fw-bold">Commit Introducer</button></form></div></div></div></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script src="js/config.js"></script>
     <script src="js/system_config.js"></script>
     <script src="js/utilities.js"></script>
     <script src="js/airtable.js"></script>
     <script src="js/auth.js"></script>
-
     <script src="js/manage.js"></script>
     <script src="js/steamQueue.js"></script>
     <script src="js/introducer.js"></script>
     <script src="js/dashboard.js"></script>
-
     <script src="js/bookings.js"></script>
     <script src="js/financials.js"></script>
     <script src="js/guests.js"></script>
