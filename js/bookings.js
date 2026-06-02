@@ -266,72 +266,43 @@ console.log("Attempting to lodge financial data:", {
 });
 
 // --- FINAL LODGMENT ENGINE ---
-const finResult = await dispatchPostRESTRequestHandshake('Financial Ledger', {
+// 1. Prepare the payload
+const financialPayload = {
     "Booking Link": [bookingEntryRecord.id],
     "Base Revenue": Number(netBaseRevenue) || 0,
     "VAS Revenue": Number(manualVasFee) || 0,
     "Settlement Type": settlementMethodPathway
+};
+
+// 2. Perform the LODGMENT and CRITICALLY evaluate the result
+console.log("Lodging to Financial Ledger:", financialPayload);
+const finResult = await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
+
+// 3. Strict error checking
+if (!finResult || finResult.error) {
+    console.error("FINANCIAL LODGMENT FAILED:", finResult ? finResult.error : "Unknown Error");
+    // If you see a 422 error here, Airtable is complaining about a specific field name
+} else {
+    console.log("Financial Lodgment Success!");
+}
+
+// 4. Continue with receipt and commission logic
+collectedReceiptItems.push({
+    bookingId: bookingEntryRecord.fields['Booking ID'] || "BK-AURA",
+    guestName: guestNameStr,
+    service: chosenPackageName,
+    price: grossCollectedTotal
 });
 
-if (!finResult) {
-    console.error("Financial Lodgment Failed. Check column names in Airtable.");
+if (resolvedIntroducerRecordId) {
+    await dispatchPostRESTRequestHandshake('Commissions Ledger', {
+        "Booking Link": [bookingEntryRecord.id],
+        "Introducer Link": [resolvedIntroducerRecordId],
+        "Total Volume Base": Number(rawPackagePrice + manualVasFee) || 0,
+        "Commission Percentage": commissionBasisType === 'PCT' ? (parseInt(commissionInputAmount, 10) || 0) : 0,
+        "Payout Status": "Pending"
+    });
 }
-                        collectedReceiptItems.push({
-                            bookingId: bookingEntryRecord.fields['Booking ID'] || "BK-AURA",
-                            guestName: guestNameStr,
-                            service: chosenPackageName,
-                            price: grossCollectedTotal
-                        });
-
-                        if (resolvedIntroducerRecordId) {
-                            await dispatchPostRESTRequestHandshake('Commissions Ledger', {
-                                "Booking Link": [bookingEntryRecord.id],
-                                "Introducer Link": [resolvedIntroducerRecordId],
-                                "Total Volume Base": Number(rawPackagePrice + manualVasFee) || 0,
-                                "Commission Percentage": commissionBasisType === 'PCT' ? (parseInt(commissionInputAmount, 10) || 0) : 0,
-                                "Payout Status": "Pending"
-                            });
-                        }
-                    }
-                }
-
-                if (collectedReceiptItems.length > 0) {
-                    const printWindow = window.open('', '_blank', 'width=340,height=650');
-                    if (printWindow) {
-                        printWindow.document.write(`
-                            <html>
-                            <body style="font-family:monospace; font-size:12px; padding:15px; color:#111;">
-                                <div style="text-align:center; margin-bottom:12px;">
-                                    <img src="${savedBrandingLogoUrl}" alt="Logo" style="max-width:100px; height:auto; margin-bottom:6px;"><br>
-                                    <strong style="font-size:15px;">ISIWARA AURA</strong><br>
-                                    <span style="font-size:10px; color:#444;">Boutique Heritage Wellness Center</span>
-                                </div>
-                                <hr style="border-top:1px dashed #000; margin-bottom:10px;">
-                                <div style="margin-bottom:4px;"><strong>Date/Time:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
-                                <div style="margin-bottom:12px;"><strong>Settlement Channel:</strong> ${settlementMethodPathway}</div>
-                                <table style="width:100%; font-size:12px; border-collapse:collapse;">
-                                    <tr style="border-bottom:1px solid #000; font-weight:bold;">
-                                        <td style="padding-bottom:4px;">Description</td>
-                                        <td style="text-align:right; padding-bottom:4px;">Amount</td>
-                                    </tr>
-                                    ${collectedReceiptItems.map(item => `
-                                        <tr>
-                                            <td style="padding:6px 0 2px 0;"><strong>${item.guestName}</strong><br><span style="color:#555; font-size:11px;">${item.service} (${item.bookingId})</span></td>
-                                            <td style="text-align:right; font-weight:bold; vertical-align:bottom;">රු. ${item.price.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                                        </tr>
-                                    `).join('')}
-                                </table>
-                                <hr style="border-top:1px dashed #000; margin-top:15px; margin-bottom:10px;">
-                                <div style="text-align:center; font-size:10px; font-weight:bold; color:#1e4620;">✔ TRANSACTION COMPLETED</div>
-                                <div style="text-align:center; font-size:9px; color:#555; margin-top:2px;">Thank you for visiting Isiwara Aura.</div>
-                            </body>
-                            </html>
-                        `);
-                        printWindow.document.close();
-                        setTimeout(() => { printWindow.print(); }, 500);
-                    }
-                }
-
                 // ... (rest of your POS intake code)
                 const modalEl = document.getElementById('bulkIntakeModal');
                 const modalInstance = bootstrap.Modal.getInstance(modalEl);
