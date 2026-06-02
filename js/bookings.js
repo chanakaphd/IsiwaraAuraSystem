@@ -1,14 +1,14 @@
 /**
- * Isiwara Aura - Advanced Production Operations & Modern POS Checkout Controller
- * Upgraded for sequential integrity, conditional tracking logic, and future touch-ready UI layouts.
+ * Isiwara Aura - Production Operations & POS Accounting Engine
+ * RE-ENGINEERED: Relational schema mapping for Financial & Commissions Ledgers.
  */
 
-// Global App State Matrix
+// Global Cache Core Matrix
 var cacheRooms = [];
 var cacheIntroducers = [];
 
 /**
- * 1. Synchronous Cloud Boot Handshake
+ * 1. Synchronous Cloud Bootstrap Initialization
  */
 async function initializeGlobalCaches() {
     try {
@@ -27,7 +27,7 @@ async function initializeGlobalCaches() {
 }
 
 /**
- * 2. Smart Form Interactivity & Conditional Layout Layer
+ * 2. Smart Form Interactivity Dropdown Population Layer
  */
 function safelyForcePopulatePOSDropdownFields() {
     const roomSelect = document.getElementById('bulkIntakeRoomSelect');
@@ -49,10 +49,9 @@ function safelyForcePopulatePOSDropdownFields() {
         introSelect.innerHTML = options;
     }
 
-    // Bind conditional UI visibility toggles
     if (introSelect) {
         introSelect.addEventListener('change', toggleConditionalCommissionFields);
-        toggleConditionalCommissionFields(); // Execute initially
+        toggleConditionalCommissionFields(); // Run initial setup loop
     }
 }
 
@@ -66,17 +65,16 @@ function toggleConditionalCommissionFields() {
     if (!introSelect || !commissionWrapper) return;
     
     if (introSelect.value === 'Direct' || introSelect.value === '') {
-        commissionWrapper.style.display = 'none'; // Clear from view for Direct Walk-ins
+        commissionWrapper.style.display = 'none';
     } else {
-        commissionWrapper.style.display = 'block'; // Make visible for active partners
-        // Ensure sub-labels correspond to current measurement scales
+        commissionWrapper.style.display = 'block';
         if (typeof toggleCommissionAddonLabel === 'function') toggleCommissionAddonLabel();
     }
     updateLiveIntakeSummaryDisplayLayer();
 }
 
 /**
- * 3. Reactive Accounting Summary Engine
+ * 3. Reactive Accounting Summary UI Engine
  */
 function updateLiveIntakeSummaryDisplayLayer() {
     const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row, [id^="guest-row-"]');
@@ -86,7 +84,6 @@ function updateLiveIntakeSummaryDisplayLayer() {
     let totalDiscountAmount = 0;
     let totalCommissionAmount = 0;
 
-    // Gather inputs accurately across changing row formats
     containerRows.forEach(row => {
         const priceInput = row.querySelector('.package-price-input') || row.querySelectorAll('input[type="number"]')[0];
         const vasInput = row.querySelector('.vas-fee-input') || row.querySelectorAll('input[type="number"]')[1];
@@ -101,7 +98,6 @@ function updateLiveIntakeSummaryDisplayLayer() {
         totalDiscountAmount += (basePrice * (discountPercentage / 100));
     });
 
-    // Check conditional tracking state for calculated allocations
     const introSelect = document.getElementById('bulkIntakeIntroducerSelect');
     const isPartnerActive = introSelect && introSelect.value !== 'Direct' && introSelect.value !== '';
     
@@ -109,11 +105,12 @@ function updateLiveIntakeSummaryDisplayLayer() {
         const commType = document.getElementById('intakeCommType')?.value || 'LKR';
         const commValueInput = parseFloat(document.getElementById('intakeCommValue')?.value) || 0;
 
+        // RULE VALIDATION: Commission applies to Gross Subtotal (Treatment Base + VAS)
+        const grossVolumeBase = totalTreatmentAmount + totalVasAmount;
+
         if (commType === 'PCT') {
-            // Rule: Commission Split Rate (%) calculation applies strictly to Base Treatment values
-            totalCommissionAmount = totalTreatmentAmount * (commValueInput / 100);
+            totalCommissionAmount = grossVolumeBase * (commValueInput / 100);
         } else {
-            // Flat absolute value allocation
             totalCommissionAmount = commValueInput;
         }
     }
@@ -125,11 +122,11 @@ function updateLiveIntakeSummaryDisplayLayer() {
         summaryBox.innerHTML = `
             <div class="card bg-dark border-secondary text-white p-3 shadow rounded-3 animate-fade-in">
                 <div class="text-uppercase tracking-wider small text-muted mb-2 border-bottom border-secondary pb-1">Operational Receipt Matrix</div>
-                <div class="d-flex justify-content-between my-1"><span>Treatment Treatments Base:</span> <span class="font-monospace fw-bold">රු. ${totalTreatmentAmount.toFixed(2)}</span></div>
+                <div class="d-flex justify-content-between my-1"><span>Treatment Base Total:</span> <span class="font-monospace fw-bold">රු. ${totalTreatmentAmount.toFixed(2)}</span></div>
                 <div class="d-flex justify-content-between my-1"><span>Value Added Services (VAS):</span> <span class="font-monospace">රු. ${totalVasAmount.toFixed(2)}</span></div>
                 <div class="d-flex justify-content-between my-1 text-danger"><span>Deductions / Discounts:</span> <span class="font-monospace">-රු. ${totalDiscountAmount.toFixed(2)}</span></div>
                 ${isPartnerActive ? `
-                <div class="d-flex justify-content-between my-1 text-info"><span>Calculated Commission Allocation:</span> <span class="font-monospace">රු. ${totalCommissionAmount.toFixed(2)}</span></div>
+                <div class="d-flex justify-content-between my-1 text-info"><span>Calculated Partner Commission:</span> <span class="font-monospace">රු. ${totalCommissionAmount.toFixed(2)}</span></div>
                 ` : ''}
                 <div class="border-top border-secondary mt-2 pt-2 d-flex justify-content-between align-items-center">
                     <span class="text-success fw-bold">NET TOTAL DUE:</span>
@@ -140,24 +137,21 @@ function updateLiveIntakeSummaryDisplayLayer() {
 }
 
 /**
- * 4. Micro-Execution Orchestrator Lifecycle
+ * 4. Micro-Execution Orchestrator Lifecycle (Form Submission & Relational Lodgments)
  */
 document.addEventListener("DOMContentLoaded", async () => {
-    // Stage A: Load data records completely before parsing the UI view model
     await initializeGlobalCaches();
     safelyForcePopulatePOSDropdownFields();
     updateLiveIntakeSummaryDisplayLayer();
 
-    // Stage B: Event Subscriptions setup
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
     if (bulkIntakeForm) {
         bulkIntakeForm.addEventListener('input', updateLiveIntakeSummaryDisplayLayer);
         bulkIntakeForm.addEventListener('change', updateLiveIntakeSummaryDisplayLayer);
 
-        // Core Transaction Lodgment Pipeline
         bulkIntakeForm.onsubmit = async (e) => {
             e.preventDefault();
-            console.log("🚀 Initializing checkout pipeline transaction loop...");
+            console.log("🚀 Running Transaction Pipelines...");
 
             try {
                 const targetRoomRecordId = document.getElementById('bulkIntakeRoomSelect')?.value;
@@ -165,31 +159,32 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const settlementMethodPathway = document.getElementById('bulkSettlementMethod')?.value || 'Cash';
 
                 if (!targetRoomRecordId) {
-                    throw new Error("Validation Guard: Missing target physical treatment room registration.");
+                    throw new Error("Validation Exception: Target physical room assignment missing.");
                 }
 
                 const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row, [id^="guest-row-"]');
-                if (containerRows.length === 0) throw new Error("Transaction cancelled: No active guest entries recorded.");
+                if (containerRows.length === 0) throw new Error("Transaction cancelled: No active guest allocations recorded.");
 
                 for (let row of containerRows) {
                     const nameField = row.querySelector('input[type="text"]');
                     const guestNameStr = nameField ? nameField.value.trim() : "";
                     if (!guestNameStr) continue;
 
-                    // Numeric values extraction
                     const inputs = row.querySelectorAll('input[type="number"]');
                     const rawPackagePrice = inputs[0] ? parseFloat(inputs[0].value) || 0 : 0;
                     const manualVasFee = inputs[1] ? parseFloat(inputs[1].value) || 0 : 0;
                     const discountPercentage = inputs[2] ? parseFloat(inputs[2].value) || 0 : 0;
 
                     const calculatedDiscountAmount = rawPackagePrice * (discountPercentage / 100);
+                    
+                    // TRICK FIX: Base Revenue tracks net asset performance (Treatment Base - Discount)
                     const netBaseRevenue = rawPackagePrice - calculatedDiscountAmount;
 
-                    // Execution Step 1: Create Guest Profile Node
+                    // Step 1: Log Guest Profile Node
                     let guestRecord = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
-                    if (!guestRecord || !guestRecord.id) throw new Error(`Host rejected unique profile creation for: ${guestNameStr}`);
+                    if (!guestRecord || !guestRecord.id) throw new Error(`Host aborted unique profile generation for: ${guestNameStr}`);
 
-                    // Execution Step 2: Establish Booking Registry Node
+                    // Step 2: Establish Booking Registry Link Field Node
                     let bookingRecord = await dispatchPostRESTRequestHandshake('Bookings', {
                         "Guest": [guestRecord.id],
                         "Room": [targetRoomRecordId],
@@ -197,7 +192,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     });
                     if (!bookingRecord || !bookingRecord.id) throw new Error("Operational pipeline failure establishing tracking Booking reference.");
 
-                    // Execution Step 3: Populate and Post Double-Entry Financial Ledger
+                    // Step 3: Dispatch Payload to Financial Ledger
                     const financialPayload = {
                         "Booking Link": [bookingRecord.id],
                         "Base Revenue": Number(netBaseRevenue) || 0,
@@ -205,13 +200,13 @@ document.addEventListener("DOMContentLoaded", async () => {
                         "Settlement Type": settlementMethodPathway
                     };
 
-                    console.log("Lodging transaction profile:", financialPayload);
+                    console.log("Sending entry to Financial Ledger:", financialPayload);
                     const ledgerResult = await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
                     if (!ledgerResult || ledgerResult.error) {
-                        throw new Error(`Accounting Vault Rejection: ${ledgerResult ? ledgerResult.error.message : 'Unknown Fault'}`);
+                        throw new Error(`Financial Ledger Rejection: ${ledgerResult ? ledgerResult.error.message : 'Unknown Transmission Error'}`);
                     }
 
-                    // Execution Step 4: Conditional Commission Ledger Allocation Node
+                    // Step 4: Conditional Dispatch to Commissions Ledger
                     if (targetIntroducerRecordId && targetIntroducerRecordId !== 'Direct') {
                         const commType = document.getElementById('intakeCommType')?.value || 'LKR';
                         const commValueInput = parseFloat(document.getElementById('intakeCommValue')?.value) || 0;
@@ -221,16 +216,22 @@ document.addEventListener("DOMContentLoaded", async () => {
                             assignedCommPct = commValueInput;
                         }
 
+                        // TRICK FIX: Total Volume Base is explicitly mapped to Gross Subtotal (Price + VAS)
+                        const totalVolumeBaseCalculation = rawPackagePrice + manualVasFee;
+
                         const commissionPayload = {
                             "Booking Link": [bookingRecord.id],
                             "Introducer Link": [targetIntroducerRecordId],
-                            "Total Volume Base": Number(rawPackagePrice + manualVasFee) || 0,
+                            "Total Volume Base": Number(totalVolumeBaseCalculation) || 0,
                             "Commission Percentage": Number(assignedCommPct),
                             "Payout Status": "Pending"
                         };
 
-                        console.log("Lodging agency payload:", commissionPayload);
-                        await dispatchPostRESTRequestHandshake('Commissions Ledger', commissionPayload);
+                        console.log("Sending entry to Commissions Ledger:", commissionPayload);
+                        const commResult = await dispatchPostRESTRequestHandshake('Commissions Ledger', commissionPayload);
+                        if (!commResult || commResult.error) {
+                            throw new Error(`Commissions Ledger Rejection: ${commResult ? commResult.error.message : 'Unknown Transmission Error'}`);
+                        }
                     }
                 }
 
@@ -246,7 +247,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /**
- * 5. Utility Layout Switchers
+ * 5. Utility Layout Display Label Updaters
  */
 function toggleCommissionAddonLabel() {
     const typeSelect = document.getElementById('intakeCommType');
