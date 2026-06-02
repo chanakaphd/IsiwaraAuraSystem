@@ -330,6 +330,7 @@ if (!finResult) {
                     }
                 }
 
+                // ... (rest of your POS intake code)
                 const modalEl = document.getElementById('bulkIntakeModal');
                 const modalInstance = bootstrap.Modal.getInstance(modalEl);
                 if (modalInstance) modalInstance.hide();
@@ -338,12 +339,12 @@ if (!finResult) {
                 document.getElementById('posLiveSummaryWidgetContainer').innerHTML = "";
                 await fetchAndRenderMasterScheduleView();
 
-           } catch (executionError) {
+            } catch (executionError) {
                 console.error("Critical POS Exception caught:", executionError);
             }
-        }; // Closes onsubmit
-    } // Closes if(bulkIntakeForm)
-}); // Closes DOMContentLoaded
+        }; // End of onsubmit
+    } // End of if
+}); // End of DOMContentLoaded
 function toggleCommissionAddonLabel() {
     const type = document.getElementById('intakeCommType').value;
     const label = document.getElementById('lblCommValue');
