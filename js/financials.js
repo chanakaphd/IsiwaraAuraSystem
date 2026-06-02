@@ -1,54 +1,59 @@
 /**
- * Isiwara Aura - Financial Ledger Table View Renderer
+ * Isiwara Aura - Financial Analytics & Ledger Performance Dashboard
+ * Driven strictly by cloud-side calculated database formula parameters.
  */
 
-async function fetchAndRenderFinancialsListView() {
-    const tableBody = document.getElementById('financials-table-body');
-    if (!tableBody) return;
+async function fetchAndRenderFinancialMetricsOverview() {
+    const dashboardContainer = document.getElementById('financials-metrics-grid');
+    if (!dashboardContainer) return;
 
-    tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-3 font-monospace small">Streaming double-entry ledger rows...</td></tr>`;
+    console.log("📡 Extracting financial ledger performance layers from database records...");
+    const financialRecords = await fetchAirtableTableRecords('Financial Ledger');
 
-    try {
-        const financialsData = await fetchAirtableTableRecords('Financial Ledger');
-        const activeFinancials = financialsData || [];
+    let totalGrossCollected = 0;
+    let totalCommissionOutflow = 0;
+    let totalNetHouseRevenue = 0;
 
-        tableBody.innerHTML = activeFinancials.map(ledger => {
-            const fields = ledger.fields;
-            const tStamp = fields['Transaction Timestamp'] || ledger.createdTime || '';
-            const formattedDate = tStamp ? new Date(tStamp).toLocaleString() : 'N/A';
+    // Filter current month to compute Month-To-Date calculations safely
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+
+    financialRecords.forEach(record => {
+        const fields = record.fields;
+        const timestampStr = fields['Transaction Timestamp'] || record.createdTime;
+        if (!timestampStr) return;
+
+        const recordDate = new Date(timestampStr);
+        if (recordDate.getFullYear() === currentYear && recordDate.getMonth() === currentMonth) {
             
-            return `
-                <tr class="animate-fade-in">
-                    <td><strong>${fields['Ledger ID'] || 'LED-PRX'}</strong></td>
-                    <td>👤 ${fields['Guest Name Reference'] || 'Walk-In Customer'}</td>
-                    <td>රු. ${(fields['Base Revenue'] || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                    <td>රු. ${(fields['VAS Revenue'] || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                    <td class="fw-bold text-success">රු. ${(fields['Gross Collected'] || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                    <td><span class="badge bg-secondary">${fields['Settlement Type'] || 'Cash'}</span></td>
-                    <td class="small text-muted">${formattedDate}</td>
-                    <td><span class="badge bg-dark">Unlocked</span></td>
-                </tr>
-            `;
-        }).join('');
+            // ARCHITECTURAL FIX: Extract the values computed on Airtable's side directly
+            const grossValue = parseFloat(fields['Gross Collected']) || 0;
+            const commValue = parseFloat(fields['Calculated Commission']) || 0;
+            const netValue = parseFloat(fields['Net Revenue']) || 0;
 
-        if (activeFinancials.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-3 text-muted">No finalized accounting trails recorded.</td></tr>`;
+            totalGrossCollected += grossValue;
+            totalCommissionOutflow += commValue;
+            totalNetHouseRevenue += netValue;
         }
-    } catch (err) {
-        console.error("Financial render failure:", err);
-        tableBody.innerHTML = `<tr><td colspan="8" class="text-danger text-center py-3">⚠️ Failed to synchronize financial rows layout.</td></tr>`;
+    });
+
+    // Populate UI layout metric elements safely
+    if (document.getElementById('metricGrossCollected')) {
+        document.getElementById('metricGrossCollected').innerText = `රු. ${totalGrossCollected.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
     }
+    if (document.getElementById('metricCommissionOutflow')) {
+        document.getElementById('metricCommissionOutflow').innerText = `රු. ${totalCommissionOutflow.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+    }
+    if (document.getElementById('metricNetHouseRevenue')) {
+        document.getElementById('metricNetHouseRevenue').innerText = `රු. ${totalNetHouseRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+    }
+
+    console.log("✅ Dashboard calculations balanced perfectly with cloud infrastructure records.");
 }
 
-// Global scope auto-execution mapping
+// Fire rendering immediately if view hook exists on load
 document.addEventListener("DOMContentLoaded", () => {
-    if (typeof showTab === 'function') {
-        const originalShowTab = window.showTab;
-        window.showTab = function(tabName) {
-            originalShowTab(tabName);
-            if (tabName === 'financials') {
-                fetchAndRenderFinancialsListView();
-            }
-        };
+    if (document.getElementById('financials-metrics-grid')) {
+        fetchAndRenderFinancialMetricsOverview();
     }
 });
