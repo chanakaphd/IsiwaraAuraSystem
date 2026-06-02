@@ -2,7 +2,21 @@
  * Isiwara Aura - Production Operations & POS Accounting Engine
  * RE-ARRANGED: Sequential integrity, robust error handling, and singular naming convention.
  */
-
+// Ensure you are passing the raw name string 'Financial Ledger'
+async function dispatchPostRESTRequestHandshake(table, payload) {
+    // encodeURIComponent will turn the space into %20 correctly
+    const url = `https://api.airtable.com/v0/appUiKkBwfVFQXJja/${encodeURIComponent(table)}`;
+    
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('AIRTABLE_API_KEY')}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ fields: payload })
+    });
+    return await response.json();
+}
 // Global Cache State
 var cacheRooms = [];
 var cacheIntroducers = [];
