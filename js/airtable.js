@@ -46,43 +46,80 @@ async function synchronizeLocalMetadataCachePools() {
  * @param {string} tableWithParams - Target table name and optional query syntax strings
  * @returns {Array} Extracted row records array from server response
  */
-async function fetchAirtableTableRecords(tableWithParams) {
-    if (!AIRTABLE_API_KEY || !BASE_ID) {
-        console.warn("API Execution Halted: Configuration parameters are incomplete.");
+/**
+ * Isiwara Aura - Global Service Transport Layer
+ * Standardized network protocol interface using dynamically scoped local storage keys.
+ */
+
+/**
+ * Universally retrieves a clean data payload string array from a target Airtable table.
+ */
+async function fetchAirtableTableRecords(tableName) {
+    const baseId = localStorage.getItem('BASE_ID');
+    const apiKey = localStorage.getItem('AIRTABLE_API_KEY');
+
+    if (!baseId || !apiKey || baseId === 'undefined' || apiKey === 'undefined') {
+        console.error(`❌ Transport Blocked [GET]: Missing parameters for table: ${tableName}`);
         return [];
     }
 
-    // Safely parse table names that contain spaces or special parameters cleanly
-    const sanitizedPath = tableWithParams.includes('?') || tableWithParams.includes('/') 
-        ? tableWithParams 
-        : encodeURIComponent(tableWithParams);
+    // Encodes spaces cleanly (e.g., 'Financial Ledger' -> 'Financial%20Ledger') without double-encoding
+    const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`;
 
-    const endpointUrl = `https://api.airtable.com/v0/${BASE_ID}/${sanitizedPath}`;
-    
     try {
-        const response = await fetch(endpointUrl, {
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             }
         });
 
         if (!response.ok) {
-            const errorDetails = await response.text();
-            console.error(`Airtable Server Rejected Request [${response.status}]:`, errorDetails);
+            const errData = await response.json();
+            console.error(`❌ Server Error [${response.status}] for ${tableName}:`, errData);
             return [];
         }
 
-        const dataPayload = await response.json();
-        return dataPayload.records || [];
-
+        const data = await response.json();
+        return data.records || [];
     } catch (networkError) {
-        console.error(`Critical fetch exception dropped on [${tableWithParams}]:`, networkError);
+        console.error(`❌ Connection Failure reaching table ${tableName}:`, networkError);
         return [];
     }
 }
 
+/**
+ * Dispatches a single object dataset record insertion cleanly into the host schema.
+ */
+async function dispatchPostRESTRequestHandshake(tableName, payloadFields) {
+    const baseId = localStorage.getItem('BASE_ID');
+    const apiKey = localStorage.getItem('AIRTABLE_API_KEY');
+
+    if (!baseId || !apiKey || baseId === 'undefined' || apiKey === 'undefined') {
+        console.error(`❌ Transport Blocked [POST]: Missing credentials for table: ${tableName}`);
+        return { error: { message: "Local credentials configuration missing." } };
+    }
+
+    const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ fields: payloadFields })
+        });
+
+        const resultData = await response.json();
+        return resultData;
+    } catch (networkError) {
+        console.error(`❌ Post Transmission Crash on table ${tableName}:`, networkError);
+        return { error: { message: networkError.message } };
+    }
+}
 /**
  * Executes a partial PATCH request to mutate parameters of an existing row.
  * Used for updating introducer disbursements, rolling back day-locks, and patching guest records.
