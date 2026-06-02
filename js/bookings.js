@@ -3,26 +3,14 @@
  * RE-ARRANGED: Sequential integrity, robust error handling, and singular naming convention.
  */
 // Add this to your utility or api file
-async function dispatchPostRESTRequestHandshake(table, payload) {
-    const KEY = localStorage.getItem('AIRTABLE_API_KEY');
-    const BASE = localStorage.getItem('BASE_ID');
+// TEMPORARY: Replace your fetch call with this to see if the connection works
+const BASE_ID = 'appUiKkBwfVFQXJja'; // Your real ID
+const KEY = 'patTKmyobin6uTUoi.c895afd7543968d1740ba8626d9160048e1703c2fb6475a7f7319d7cec90825e'; // Your real Key
 
-    if (!KEY || !BASE || KEY === 'undefined' || BASE === 'undefined') {
-        console.error("❌ HANDSHAKE BLOCKED: Missing Credentials in Storage");
-        return { error: { message: "Credentials not found in browser storage." } };
-    }
-
-    const response = await fetch(`https://api.airtable.com/v0/${BASE}/${encodeURIComponent(table)}`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ fields: payload })
-    });
-
-    return await response.json();
-}
+// Test the call directly
+fetch(`https://api.airtable.com/v0/${BASE_ID}/Financial%20Ledger`, {
+    headers: { 'Authorization': `Bearer ${KEY}` }
+}).then(res => console.log("Result:", res.status));
 // Global Cache State
 var cacheRooms = [];
 var cacheIntroducers = [];
