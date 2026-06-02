@@ -1,31 +1,38 @@
 /**
- * Isiwara Aura - Production Operations & POS Engine Controller
+ * Isiwara Aura - Advanced Production Operations & Modern POS Checkout Controller
+ * RELATIONAL MATRIX: Integrates automated Treatment Price lookups and Specialist Therapist mapping nodes.
  */
 
 var cacheRooms = [];
 var cacheIntroducers = [];
+var cacheTreatments = [];
+var cacheTherapists = [];
 
 /**
- * 1. Synchronous Cloud Bootstrap Initialization
+ * 1. Synchronous Cloud Bootstrap Initialization (4-Table Pipeline Sync)
  */
 async function initializeGlobalCaches() {
     try {
-        console.log("📡 Core Sync: Fetching master structural table states...");
-        const [roomsResponse, introducersResponse] = await Promise.all([
+        console.log("📡 Core Sync: Fetching all relational structural schema states...");
+        const [roomsRes, introducersRes, treatmentsRes, therapistsRes] = await Promise.all([
             fetchAirtableTableRecords('Rooms'),
-            fetchAirtableTableRecords('Introducers')
+            fetchAirtableTableRecords('Introducers'),
+            fetchAirtableTableRecords('Treatments'),
+            fetchAirtableTableRecords('Therapists')
         ]);
         
-        cacheRooms = roomsResponse || [];
-        cacheIntroducers = introducersResponse || [];
-        console.log("✅ Core Sync Success:", { rooms: cacheRooms.length, introducers: cacheIntroducers.length });
+        cacheRooms = roomsRes || [];
+        cacheIntroducers = introducersRes || [];
+        cacheTreatments = treatmentsRes || [];
+        cacheTherapists = therapistsRes || [];
+        console.log("✅ Sync Complete. System memory populated cleanly.");
     } catch (e) {
-        console.error("❌ Core Sync Failed:", e);
+        console.error("❌ Core Bootstrap Cache Handshake Failure:", e);
     }
 }
 
 /**
- * 2. Smart Form UI Population Layer
+ * 2. Master Dropdown Populator Nodes
  */
 function safelyForcePopulatePOSDropdownFields() {
     const roomSelect = document.getElementById('bulkIntakeRoomSelect');
@@ -69,40 +76,75 @@ function toggleConditionalCommissionFields() {
 }
 
 /**
- * Spawns an interactive touch row for guest assignments dynamically
+ * 3. Dynamic Interactive Row Generator with Automated Relational Options Injection
  */
 function appendNewGuestAllocationRow() {
     const container = document.getElementById('dynamic-guests-rows-container');
     if (!container) return;
 
     const uniqueId = "guest-row-" + Date.now();
+
+    // Compile select dropdown parameters from cache states
+    const treatmentOptionsHTML = cacheTreatments.map(t => 
+        `<option value="${t.id}">${t.fields['Treatment Name']} (රු. ${(t.fields['Price'] || 0).toLocaleString()})</option>`
+    ).join('');
+
+    const therapistOptionsHTML = cacheTherapists.map(th => 
+        `<option value="${th.id}">${th.fields['Full Name'] || th.fields['Name']}</option>`
+    ).join('');
+
     const rowHTML = `
         <div class="row g-2 align-items-end dynamic-guest-row bg-black p-3 rounded-3 mb-2 border border-dark animate-fade-in" id="${uniqueId}">
-            <div class="col-md-4">
-                <input type="text" class="form-control bg-dark text-white border-secondary py-2" placeholder="Enter guest name..." required>
+            <!-- 1. Guest Profile Name -->
+            <div class="col-md-3">
+                <input type="text" class="form-control bg-dark text-white border-secondary py-2 guest-name-input" placeholder="Guest name..." required>
             </div>
+            
+            <!-- 2. Relational Treatment Dropdown Selector -->
+            <div class="col-md-3">
+                <select class="form-select bg-dark text-white border-secondary py-2 treatment-select-input" required>
+                    <option value="">-- Choose Treatment --</option>
+                    ${treatmentOptionsHTML}
+                </select>
+            </div>
+            
+            <!-- 3. Relational Therapist Dropdown Selector -->
             <div class="col-md-2">
-                <input type="number" class="form-control bg-dark text-white border-secondary py-2 package-price-input" value="0" min="0" step="100">
+                <select class="form-select bg-dark text-white border-secondary py-2 therapist-select-input" required>
+                    <option value="">-- Assign Staff --</option>
+                    ${therapistOptionsHTML}
+                </select>
             </div>
+            
+            <!-- 4. Value Added Services Amount Entry -->
             <div class="col-md-2">
                 <input type="number" class="form-control bg-dark text-white border-secondary py-2 vas-fee-input" value="0" min="0" step="100">
             </div>
-            <div class="col-md-2">
+            
+            <!-- 5. Discount Percentage Value -->
+            <div class="col-md-1">
                 <input type="number" class="form-control bg-dark text-white border-secondary py-2 discount-input" value="0" min="0" max="100">
             </div>
-            <div class="col-md-2 text-end">
+            
+            <!-- 6. Drop Active Segment Node Action -->
+            <div class="col-md-1 text-end">
                 <button type="button" onclick="document.getElementById('${uniqueId}').remove(); updateLiveIntakeSummaryDisplayLayer();" class="btn btn-outline-danger w-100 py-2 btn-sm text-uppercase fw-bold">
-                    Drop Row
+                    🗑️
                 </button>
             </div>
         </div>`;
     
     container.insertAdjacentHTML('beforeend', rowHTML);
+    
+    // Bind real-time change calculation listeners directly to new dropdown entries
+    const newRow = document.getElementById(uniqueId);
+    newRow.querySelector('.treatment-select-input').addEventListener('change', updateLiveIntakeSummaryDisplayLayer);
+    
     updateLiveIntakeSummaryDisplayLayer();
 }
 
 /**
- * 3. Reactive Accounting Summary UI Engine
+ * 4. Reactive Accounting Summary Core (Pulls price from Treatment Cache)
  */
 function updateLiveIntakeSummaryDisplayLayer() {
     const containerRows = document.querySelectorAll('.dynamic-guest-row');
@@ -113,9 +155,13 @@ function updateLiveIntakeSummaryDisplayLayer() {
     let totalCommissionAmount = 0;
 
     containerRows.forEach(row => {
-        const basePrice = parseFloat(row.querySelector('.package-price-input')?.value) || 0;
+        const selectedTreatmentId = row.querySelector('.treatment-select-input')?.value;
         const vasFee = parseFloat(row.querySelector('.vas-fee-input')?.value) || 0;
         const discountPercentage = parseFloat(row.querySelector('.discount-input')?.value) || 0;
+
+        // AUTOMATED LOOKUP TRICK: Match the chosen treatment id against the records cache
+        const matchedTreatment = cacheTreatments.find(t => t.id === selectedTreatmentId);
+        const basePrice = matchedTreatment ? (parseFloat(matchedTreatment.fields['Price']) || 0) : 0;
 
         totalTreatmentAmount += basePrice;
         totalVasAmount += vasFee;
@@ -128,7 +174,7 @@ function updateLiveIntakeSummaryDisplayLayer() {
     if (isPartnerActive) {
         const commType = document.getElementById('intakeCommType')?.value || 'LKR';
         const commValueInput = parseFloat(document.getElementById('intakeCommValue')?.value) || 0;
-        const grossVolumeBase = totalTreatmentAmount + totalVasAmount;
+        const grossVolumeBase = totalTreatmentAmount + totalVasAmount; // Fixed calculation alignment node
 
         if (commType === 'PCT') {
             totalCommissionAmount = grossVolumeBase * (commValueInput / 100);
@@ -145,7 +191,7 @@ function updateLiveIntakeSummaryDisplayLayer() {
         summaryBox.innerHTML = `
             <div class="card bg-dark border-secondary text-white p-3 shadow rounded-3">
                 <div class="text-uppercase tracking-wider small text-muted mb-2 border-bottom border-secondary pb-1">Live POS Register Monitor</div>
-                <div class="d-flex justify-content-between my-1"><span>Total Treatment Price:</span> <span>රු. ${totalTreatmentAmount.toFixed(2)}</span></div>
+                <div class="d-flex justify-content-between my-1"><span>Total Treatment Price:</span> <span class="fw-bold text-success">රු. ${totalTreatmentAmount.toFixed(2)}</span></div>
                 <div class="d-flex justify-content-between my-1"><span>Value Added Services (VAS):</span> <span>රු. ${totalVasAmount.toFixed(2)}</span></div>
                 <div class="d-flex justify-content-between my-1 text-danger"><span>Discounts Subtracted:</span> <span>-රු. ${totalDiscountAmount.toFixed(2)}</span></div>
                 ${isPartnerActive ? `<div class="d-flex justify-content-between my-1 text-info"><span>Partner Commission Outflow:</span> <span>රු. ${totalCommissionAmount.toFixed(2)}</span></div>` : ''}
@@ -163,11 +209,11 @@ function updateLiveIntakeSummaryDisplayLayer() {
 }
 
 /**
- * 4. Form Lifecycle Form Pipeline
+ * 5. Transaction Relational Lodgment Pipeline Execution Loop
  */
 document.addEventListener("DOMContentLoaded", async () => {
     await initializeGlobalCaches();
-    appendNewGuestAllocationRow(); // Seed one row initially
+    appendNewGuestAllocationRow(); // Seed one standard row
     safelyForcePopulatePOSDropdownFields();
 
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
@@ -182,35 +228,45 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const targetIntroducerRecordId = document.getElementById('bulkIntakeIntroducerSelect')?.value;
                 const settlementMethodPathway = document.getElementById('bulkSettlementMethod')?.value || 'Cash';
 
-                if (!targetRoomRecordId) throw new Error("Validation Error: Missing physical room assignment.");
+                if (!targetRoomRecordId) throw new Error("Validation Error: Missing target physical room field selection.");
 
                 const containerRows = document.querySelectorAll('.dynamic-guest-row');
-                if (containerRows.length === 0) throw new Error("Validation Error: No active guest entries generated.");
+                if (containerRows.length === 0) throw new Error("Validation Error: No active operational guest instances recorded.");
 
                 for (let row of containerRows) {
-                    const guestNameStr = row.querySelector('input[type="text"]')?.value.trim();
-                    if (!guestNameStr) continue;
+                    const guestNameStr = row.querySelector('.guest-name-input')?.value.trim();
+                    const selectedTreatmentId = row.querySelector('.treatment-select-input')?.value;
+                    const selectedTherapistId = row.querySelector('.therapist-select-input')?.value;
+                    
+                    if (!guestNameStr || !selectedTreatmentId || !selectedTherapistId) {
+                        throw new Error("Validation Error: Ensure Guest Name, Treatment, and Therapist fields are fully assigned per row.");
+                    }
 
-                    const rawPackagePrice = parseFloat(row.querySelector('.package-price-input')?.value) || 0;
                     const manualVasFee = parseFloat(row.querySelector('.vas-fee-input')?.value) || 0;
                     const discountPercentage = parseFloat(row.querySelector('.discount-input')?.value) || 0;
+
+                    // Fetch base price configuration from cached structure row reference
+                    const matchedTreatment = cacheTreatments.find(t => t.id === selectedTreatmentId);
+                    const rawPackagePrice = matchedTreatment ? (parseFloat(matchedTreatment.fields['Price']) || 0) : 0;
 
                     const calculatedDiscountAmount = rawPackagePrice * (discountPercentage / 100);
                     const calculatedBaseRevenue = rawPackagePrice - calculatedDiscountAmount;
 
-                    // Write 1: Post Guest Record
+                    // Write Step A: Post Unique Profile to Guests Table
                     let guestRecord = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
-                    if (!guestRecord || !guestRecord.id) throw new Error(`Server failed writing profile for ${guestNameStr}`);
+                    if (!guestRecord || !guestRecord.id) throw new Error(`Server aborted transaction writing profile for: ${guestNameStr}`);
 
-                    // Write 2: Post Booking Record
+                    // Write Step B: Post Booking Record explicitly linking the chosen Treatment and Therapist IDs
                     let bookingRecord = await dispatchPostRESTRequestHandshake('Bookings', {
                         "Guest": [guestRecord.id],
                         "Room": [targetRoomRecordId],
+                        "Treatment": [selectedTreatmentId],  // Injected Relational Field
+                        "Therapist": [selectedTherapistId],  // Injected Relational Field
                         "Status": "Completed"
                     });
-                    if (!bookingRecord || !bookingRecord.id) throw new Error("Server failed generating core Booking node.");
+                    if (!bookingRecord || !bookingRecord.id) throw new Error("Server aborted operational transaction generating core Booking tracking index.");
 
-                    // Write 3: Post Financial Record
+                    // Write Step C: Post Balanced Double-Entry Payload to Financial Ledger
                     const financialPayload = {
                         "Booking Link": [bookingRecord.id],
                         "Base Revenue": Number(calculatedBaseRevenue),
@@ -219,7 +275,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     };
                     await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
 
-                    // Write 4: Post Commission Record
+                    // Write Step D: Post Commission Ledger Entry conditionally
                     if (targetIntroducerRecordId && targetIntroducerRecordId !== 'Direct') {
                         const commissionPercentInput = parseFloat(document.getElementById('intakeCommValue')?.value) || 0;
                         const totalVolumeBaseCalculation = rawPackagePrice + manualVasFee;
@@ -235,10 +291,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                     }
                 }
 
-                alert("🟢 POS Transaction Securely Transmitted & Recorded.");
+                alert("🟢 POS Transaction Successfully Logged and Linked Across Database Schema.");
                 location.reload();
             } catch (pipelineFault) {
-                console.error("❌ POS Pipeline Interrupted:", pipelineFault);
+                console.error("Critical POS System Runtime Halt:", pipelineFault);
                 alert("POS Execution Aborted:\n" + pipelineFault.message);
             }
         };
