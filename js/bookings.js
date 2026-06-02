@@ -104,24 +104,32 @@ document.addEventListener("DOMContentLoaded", () => {
                     "Status": "Completed"
                 });
 
-                // 3. Lodgment of Financial Ledger (Using Singular Name)
-                const finPayload = {
-                    "Booking Link": [booking.id],
-                    "Base Revenue": parseFloat(row.querySelector('.package-price-input').value),
-                    "VAS Revenue": parseFloat(row.querySelector('.vas-fee-input').value),
-                    "Settlement Type": document.getElementById('bulkSettlementMethod').value
-                };
-                
-                const res = await dispatchPostRESTRequestHandshake('Financial Ledger', finPayload);
-                if (res.error) throw new Error(`Ledger Lodgment Failed: ${res.error.message}`);
-            }
+               // 1. Lodgment of Financial Ledger (Only once!)
+const finResult = await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
 
-            alert("POS Transaction Successful");
-            location.reload();
-       } catch (executionError) {
-                console.error("Critical POS Exception caught:", executionError);
-                alert("POS Transaction Failed: " + executionError.message);
-            }
+// Check if the first lodgment failed
+if (finResult.error) {
+    throw new Error(`Financial Ledger Lodgment Failed: ${finResult.error.message}`);
+}
+
+// 2. Lodgment of Commissions Ledger (Only if introducer exists)
+if (resolvedIntroducerRecordId) {
+    const commResult = await dispatchPostRESTRequestHandshake('Commissions Ledger', commissionPayload);
+    
+    // Check if the commission lodgment failed
+    if (commResult.error) {
+        throw new Error(`Commissions Ledger Lodgment Failed: ${commResult.error.message}`);
+    }
+}
+
+// 3. Success - Only alert once all database operations have cleared
+alert("POS Transaction Successful: Records lodged to Financial & Commissions Ledgers.");
+location.reload();
+
+} catch (executionError) {
+    console.error("Critical POS Exception caught:", executionError);
+    alert("POS Transaction Failed: " + executionError.message);
+}
         }; // End of onsubmit
     } // End of if
 }); // End of DOMContentLoaded
