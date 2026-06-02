@@ -1,33 +1,31 @@
 /**
- * Isiwara Aura - Production Operations & POS Accounting Engine
- * RE-ENGINEERED: Relational schema mapping for Financial & Commissions Ledgers.
+ * Isiwara Aura - Production Operations & Modern POS Checkout Controller
+ * Structured for absolute data-type parity and sequential touch-screen tracking.
  */
 
-// Global Cache Core Matrix
 var cacheRooms = [];
 var cacheIntroducers = [];
 
 /**
- * 1. Synchronous Cloud Bootstrap Initialization
+ * Core Initialization: Grabs basic data pools from the server
  */
 async function initializeGlobalCaches() {
     try {
-        console.log("📡 Core Sync: Initializing cloud data tables...");
+        console.log("📡 Initializing infrastructure dropdown states...");
         const [roomsResponse, introducersResponse] = await Promise.all([
             fetchAirtableTableRecords('Rooms'),
             fetchAirtableTableRecords('Introducers')
         ]);
-        
         cacheRooms = roomsResponse || [];
         cacheIntroducers = introducersResponse || [];
-        console.log("✅ Core Sync Success:", { rooms: cacheRooms.length, introducers: cacheIntroducers.length });
+        console.log("✅ State successfully cached locally.");
     } catch (e) {
-        console.error("❌ Core Sync Failed:", e);
+        console.error("❌ Infrastructure bootstrap cache failure:", e);
     }
 }
 
 /**
- * 2. Smart Form Interactivity Dropdown Population Layer
+ * Injects operational tables records securely into your select element templates
  */
 function safelyForcePopulatePOSDropdownFields() {
     const roomSelect = document.getElementById('bulkIntakeRoomSelect');
@@ -47,21 +45,17 @@ function safelyForcePopulatePOSDropdownFields() {
             ).join('');
         }
         introSelect.innerHTML = options;
-    }
-
-    if (introSelect) {
         introSelect.addEventListener('change', toggleConditionalCommissionFields);
-        toggleConditionalCommissionFields(); // Run initial setup loop
+        toggleConditionalCommissionFields();
     }
 }
 
 /**
- * Toggles visibility of the Commission section depending on whether a real partner is chosen
+ * Hides or displays the commission details inputs natively depending on context tracking
  */
 function toggleConditionalCommissionFields() {
     const introSelect = document.getElementById('bulkIntakeIntroducerSelect');
     const commissionWrapper = document.getElementById('conditionalCommissionWrapper');
-    
     if (!introSelect || !commissionWrapper) return;
     
     if (introSelect.value === 'Direct' || introSelect.value === '') {
@@ -74,7 +68,7 @@ function toggleConditionalCommissionFields() {
 }
 
 /**
- * 3. Reactive Accounting Summary UI Engine
+ * Reactive Computation Engine: Draws receipt state tracking directly from physical UI fields
  */
 function updateLiveIntakeSummaryDisplayLayer() {
     const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row, [id^="guest-row-"]');
@@ -104,9 +98,7 @@ function updateLiveIntakeSummaryDisplayLayer() {
     if (isPartnerActive) {
         const commType = document.getElementById('intakeCommType')?.value || 'LKR';
         const commValueInput = parseFloat(document.getElementById('intakeCommValue')?.value) || 0;
-
-        // RULE VALIDATION: Commission applies to Gross Subtotal (Treatment Base + VAS)
-        const grossVolumeBase = totalTreatmentAmount + totalVasAmount;
+        const grossVolumeBase = totalTreatmentAmount + totalVasAmount; // Logic alignment
 
         if (commType === 'PCT') {
             totalCommissionAmount = grossVolumeBase * (commValueInput / 100);
@@ -116,28 +108,32 @@ function updateLiveIntakeSummaryDisplayLayer() {
     }
 
     const netSettlementTotal = (totalTreatmentAmount - totalDiscountAmount) + totalVasAmount;
+    const houseNetProfitRevenue = netSettlementTotal - totalCommissionAmount;
+
     const summaryBox = document.getElementById('posLiveSummaryWidgetContainer');
-    
     if (summaryBox) {
         summaryBox.innerHTML = `
             <div class="card bg-dark border-secondary text-white p-3 shadow rounded-3 animate-fade-in">
-                <div class="text-uppercase tracking-wider small text-muted mb-2 border-bottom border-secondary pb-1">Operational Receipt Matrix</div>
-                <div class="d-flex justify-content-between my-1"><span>Treatment Base Total:</span> <span class="font-monospace fw-bold">රු. ${totalTreatmentAmount.toFixed(2)}</span></div>
-                <div class="d-flex justify-content-between my-1"><span>Value Added Services (VAS):</span> <span class="font-monospace">රු. ${totalVasAmount.toFixed(2)}</span></div>
-                <div class="d-flex justify-content-between my-1 text-danger"><span>Deductions / Discounts:</span> <span class="font-monospace">-රු. ${totalDiscountAmount.toFixed(2)}</span></div>
-                ${isPartnerActive ? `
-                <div class="d-flex justify-content-between my-1 text-info"><span>Calculated Partner Commission:</span> <span class="font-monospace">රු. ${totalCommissionAmount.toFixed(2)}</span></div>
-                ` : ''}
-                <div class="border-top border-secondary mt-2 pt-2 d-flex justify-content-between align-items-center">
-                    <span class="text-success fw-bold">NET TOTAL DUE:</span>
-                    <span class="fs-4 fw-bold text-success font-monospace">රු. ${netSettlementTotal.toFixed(2)}</span>
+                <div class="text-uppercase tracking-wider small text-muted mb-2 border-bottom border-secondary pb-1">Live Operational Receipt Model</div>
+                <div class="d-flex justify-content-between my-1"><span>Total Treatment Price:</span> <span class="fw-bold">රු. ${totalTreatmentAmount.toFixed(2)}</span></div>
+                <div class="d-flex justify-content-between my-1"><span>Value Added Services (VAS):</span> <span>රු. ${totalVasAmount.toFixed(2)}</span></div>
+                <div class="d-flex justify-content-between my-1 text-danger"><span>Deductions / Discounts Applied:</span> <span>-රු. ${totalDiscountAmount.toFixed(2)}</span></div>
+                ${isPartnerActive ? `<div class="d-flex justify-content-between my-1 text-info"><span>Calculated Commission Outflow:</span> <span>රු. ${totalCommissionAmount.toFixed(2)}</span></div>` : ''}
+                <hr class="border-secondary">
+                <div class="d-flex justify-content-between align-items-center my-1 text-success fw-bold">
+                    <span>GROSS CASH COLLECTED:</span>
+                    <span class="fs-5 font-monospace">රු. ${netSettlementTotal.toFixed(2)}</span>
+                </div>
+                <div class="border-top border-secondary mt-2 pt-2 d-flex justify-content-between align-items-center text-primary fw-bold">
+                    <span>ESTIMATED HOUSE NET REVENUE:</span>
+                    <span class="fs-4 font-monospace">රු. ${houseNetProfitRevenue.toFixed(2)}</span>
                 </div>
             </div>`;
     }
 }
 
 /**
- * 4. Micro-Execution Orchestrator Lifecycle (Form Submission & Relational Lodgments)
+ * Event Lifecycle Binding Execution Bridge
  */
 document.addEventListener("DOMContentLoaded", async () => {
     await initializeGlobalCaches();
@@ -151,19 +147,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         bulkIntakeForm.onsubmit = async (e) => {
             e.preventDefault();
-            console.log("🚀 Running Transaction Pipelines...");
-
             try {
                 const targetRoomRecordId = document.getElementById('bulkIntakeRoomSelect')?.value;
                 const targetIntroducerRecordId = document.getElementById('bulkIntakeIntroducerSelect')?.value;
                 const settlementMethodPathway = document.getElementById('bulkSettlementMethod')?.value || 'Cash';
 
-                if (!targetRoomRecordId) {
-                    throw new Error("Validation Exception: Target physical room assignment missing.");
-                }
+                if (!targetRoomRecordId) throw new Error("Validation Error: No physical location room assignment registered.");
 
                 const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row, [id^="guest-row-"]');
-                if (containerRows.length === 0) throw new Error("Transaction cancelled: No active guest allocations recorded.");
+                if (containerRows.length === 0) throw new Error("Validation Error: No operational guest entries generated.");
 
                 for (let row of containerRows) {
                     const nameField = row.querySelector('input[type="text"]');
@@ -176,85 +168,60 @@ document.addEventListener("DOMContentLoaded", async () => {
                     const discountPercentage = inputs[2] ? parseFloat(inputs[2].value) || 0 : 0;
 
                     const calculatedDiscountAmount = rawPackagePrice * (discountPercentage / 100);
-                    
-                    // TRICK FIX: Base Revenue tracks net asset performance (Treatment Base - Discount)
-                    const netBaseRevenue = rawPackagePrice - calculatedDiscountAmount;
+                    const calculatedBaseRevenue = rawPackagePrice - calculatedDiscountAmount;
 
-                    // Step 1: Log Guest Profile Node
+                    // 1. Post Guest Profile Row
                     let guestRecord = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
-                    if (!guestRecord || !guestRecord.id) throw new Error(`Host aborted unique profile generation for: ${guestNameStr}`);
+                    if (!guestRecord || !guestRecord.id) throw new Error(`Server execution halt writing profile for ${guestNameStr}`);
 
-                    // Step 2: Establish Booking Registry Link Field Node
+                    // 2. Post Booking Row
                     let bookingRecord = await dispatchPostRESTRequestHandshake('Bookings', {
                         "Guest": [guestRecord.id],
                         "Room": [targetRoomRecordId],
                         "Status": "Completed"
                     });
-                    if (!bookingRecord || !bookingRecord.id) throw new Error("Operational pipeline failure establishing tracking Booking reference.");
+                    if (!bookingRecord || !bookingRecord.id) throw new Error("Server execution halt generating core Booking node.");
 
-                    // Step 3: Dispatch Payload to Financial Ledger
+                    // 3. Post Financial Ledger Entry (Let Airtable calculate Gross Collected)
                     const financialPayload = {
                         "Booking Link": [bookingRecord.id],
-                        "Base Revenue": Number(netBaseRevenue) || 0,
-                        "VAS Revenue": Number(manualVasFee) || 0,
+                        "Base Revenue": Number(calculatedBaseRevenue),
+                        "VAS Revenue": Number(manualVasFee),
                         "Settlement Type": settlementMethodPathway
                     };
+                    const finResult = await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
+                    if (!finResult || finResult.error) throw new Error(`Financial Ledger rejection: ${finResult ? finResult.error.message : 'Unknown Fault'}`);
 
-                    console.log("Sending entry to Financial Ledger:", financialPayload);
-                    const ledgerResult = await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
-                    if (!ledgerResult || ledgerResult.error) {
-                        throw new Error(`Financial Ledger Rejection: ${ledgerResult ? ledgerResult.error.message : 'Unknown Transmission Error'}`);
-                    }
-
-                    // Step 4: Conditional Dispatch to Commissions Ledger
+                    // 4. Conditional Post Commissions Ledger Entry (Let Airtable calculate Payout Due)
                     if (targetIntroducerRecordId && targetIntroducerRecordId !== 'Direct') {
-                        const commType = document.getElementById('intakeCommType')?.value || 'LKR';
-                        const commValueInput = parseFloat(document.getElementById('intakeCommValue')?.value) || 0;
-                        
-                        let assignedCommPct = 0;
-                        if (commType === 'PCT') {
-                            assignedCommPct = commValueInput;
-                        }
-
-                        // TRICK FIX: Total Volume Base is explicitly mapped to Gross Subtotal (Price + VAS)
+                        const commissionPercentInput = parseFloat(document.getElementById('intakeCommValue')?.value) || 0;
                         const totalVolumeBaseCalculation = rawPackagePrice + manualVasFee;
 
                         const commissionPayload = {
                             "Booking Link": [bookingRecord.id],
                             "Introducer Link": [targetIntroducerRecordId],
-                            "Total Volume Base": Number(totalVolumeBaseCalculation) || 0,
-                            "Commission Percentage": Number(assignedCommPct),
+                            "Total Volume Base": Number(totalVolumeBaseCalculation),
+                            "Commission Percentage": Number(commissionPercentInput / 100), // Converted cleanly to database float format (e.g., 0.15)
                             "Payout Status": "Pending"
                         };
-
-                        console.log("Sending entry to Commissions Ledger:", commissionPayload);
                         const commResult = await dispatchPostRESTRequestHandshake('Commissions Ledger', commissionPayload);
-                        if (!commResult || commResult.error) {
-                            throw new Error(`Commissions Ledger Rejection: ${commResult ? commResult.error.message : 'Unknown Transmission Error'}`);
-                        }
+                        if (!commResult || commResult.error) throw new Error(`Commissions Ledger rejection: ${commResult ? commResult.error.message : 'Unknown Fault'}`);
                     }
                 }
 
-                alert("🟢 POS Transaction Securely Transmitted & Recorded to Cloud Ledgers.");
+                alert("🟢 Transaction Securely Processed & Lodged across Database Schema.");
                 location.reload();
-
             } catch (pipelineFault) {
-                console.error("❌ Critical Pipeline Halt:", pipelineFault);
+                console.error("❌ POS Pipeline Interrupted:", pipelineFault);
                 alert("POS Execution Aborted:\n" + pipelineFault.message);
             }
         };
     }
 });
 
-/**
- * 5. Utility Layout Display Label Updaters
- */
 function toggleCommissionAddonLabel() {
     const typeSelect = document.getElementById('intakeCommType');
     const label = document.getElementById('lblCommValue');
     if (!typeSelect || !label) return;
-    
-    label.innerText = typeSelect.value === 'LKR' 
-        ? 'Commission Value Allocation (රු.)' 
-        : 'Commission Percentage Split Rate (%)';
+    label.innerText = typeSelect.value === 'LKR' ? 'Commission Value Allocation (රු.)' : 'Commission Percentage Split Rate (%)';
 }
