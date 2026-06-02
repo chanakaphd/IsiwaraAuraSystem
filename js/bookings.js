@@ -2,6 +2,27 @@
  * Isiwara Aura - Production Operations & POS Accounting Engine
  * RE-ARRANGED: Sequential integrity, robust error handling, and singular naming convention.
  */
+// Add this to your utility or api file
+async function dispatchPostRESTRequestHandshake(table, payload) {
+    const KEY = localStorage.getItem('AIRTABLE_API_KEY');
+    const BASE = localStorage.getItem('BASE_ID');
+
+    if (!KEY || !BASE || KEY === 'undefined' || BASE === 'undefined') {
+        console.error("❌ HANDSHAKE BLOCKED: Missing Credentials in Storage");
+        return { error: { message: "Credentials not found in browser storage." } };
+    }
+
+    const response = await fetch(`https://api.airtable.com/v0/${BASE}/${encodeURIComponent(table)}`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${KEY}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ fields: payload })
+    });
+
+    return await response.json();
+}
 // Global Cache State
 var cacheRooms = [];
 var cacheIntroducers = [];
