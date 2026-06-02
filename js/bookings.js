@@ -27,8 +27,8 @@ var cacheIntroducers = [];
 async function initializeGlobalCaches() {
     try {
         const [rooms, intro] = await Promise.all([
-            fetchAirtableTableRecords('Rooms'),
-            fetchAirtableTableRecords('Introducers')
+            fetchAirtableTableRecords('Room Number'),
+            fetchAirtableTableRecords('Full Name')
         ]);
         cacheRooms = rooms || [];
         cacheIntroducers = intro || [];
