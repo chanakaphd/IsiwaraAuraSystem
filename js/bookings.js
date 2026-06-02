@@ -14,7 +14,7 @@ async function fetchAndRenderMasterScheduleView() {
     try {
         const [bookingsData, financialsData] = await Promise.all([
             fetchAirtableTableRecords('Bookings'),
-            fetchAirtableTableRecords('Financial Ledgers')
+            fetchAirtableTableRecords('Financial Ledger'), // Must match Airtable Tab Name Exactly
         ]);
 
         const activeBookings = bookingsData || [];
