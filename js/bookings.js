@@ -266,7 +266,7 @@ console.log("Attempting to lodge financial data:", {
 });
 
 // --- FINAL LODGMENT ENGINE ---
-const finResult = await dispatchPostRESTRequestHandshake('Financial Ledgers', {
+const finResult = await dispatchPostRESTRequestHandshake('Financial Ledger', {
     "Booking Link": [bookingEntryRecord.id],
     "Base Revenue": Number(netBaseRevenue) || 0,
     "VAS Revenue": Number(manualVasFee) || 0,
