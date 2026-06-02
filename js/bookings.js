@@ -100,9 +100,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             alert("POS Transaction Successful");
             location.reload();
-        } catch (err) {
-            console.error("POS Pipeline Crash:", err);
-            alert("POS Transaction Failed: " + err.message);
-        }
-    };
-});
+       } catch (executionError) {
+                console.error("Critical POS Exception caught:", executionError);
+                alert("POS Transaction Failed: " + executionError.message);
+            }
+        }; // End of onsubmit
+    } // End of if
+}); // End of DOMContentLoaded
