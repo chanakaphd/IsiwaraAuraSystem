@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        /* Modern App-Style POS Interface Theme Extensions */
+        /* Modern Touch-POS System Layout Enhancements */
         .bg-gradient-dark { background: linear-gradient(145deg, #1e222b, #14171c); }
         .bg-black { background-color: #0b0d10 !important; }
         .pos-step-card { box-shadow: 0 8px 24px rgba(0,0,0,0.3); transition: all 0.2s ease-in-out; border: 1px solid #2d323f !important; }
@@ -41,14 +41,6 @@
                 <div class="mb-1">Room Base Allocation: <strong id="lblCompRoomLabel">N/A</strong></div>
                 <div>Therapist Linked Assignment: <strong id="lblCompTherapistLabel">N/A</strong></div>
             </div>
-            
-            <div class="form-check mb-4 bg-light p-3 rounded border border-dashed border-success">
-                <input class="form-check-input ms-0 me-2" type="checkbox" id="chkUnlockResourcesOverride" checked>
-                <label class="form-check-label small fw-bold text-success" for="chkUnlockResourcesOverride">
-                    Unlock Room and Specialist Therapist effective immediately?
-                </label>
-            </div>
-
             <div class="d-flex flex-wrap gap-2 justify-content-end">
                 <button class="btn btn-sm btn-outline-secondary" id="btnCompWait10">Wait 10 Mins</button>
                 <button class="btn btn-sm btn-danger" id="btnCompCancel">Finalize & Exit Flow</button>
@@ -74,7 +66,6 @@
                     <input type="password" id="loginPass" class="form-control" style="border-radius: 8px;" value="admin" required>
                 </div>
                 <button type="submit" class="btn btn-success w-100 fw-bold py-2 mb-2" style="border-radius: 8px; background: var(--primary-green);">Authenticate Terminal Connection</button>
-                <div id="loginError" class="text-danger small mt-2 text-center" style="display:none; font-weight: 500;">Access Denied: Malformed user data.</div>
             </form>
         </div>
     </div>
@@ -82,7 +73,6 @@
     <!-- Application Shell Grid Frame -->
     <div class="container-fluid">
         <div class="row">
-            
             <!-- Side Navigation Control Panel -->
             <nav class="col-md-2 d-none d-md-block sidebar">
                 <h4>ISIWARA AURA</h4>
@@ -107,7 +97,7 @@
                     </div>
                 </header>
 
-                <!-- TAB CONTAINER: Master Schedule Grid view -->
+                <!-- TAB CONTAINER: Master Schedule -->
                 <div id="bookings-view" class="tab-pane animate-fade-in">
                     <div class="row g-3 text-center mb-4" id="master-schedule-boxes-row">
                         <div class="col-md-2"><div class="card p-3 border-0 bg-white shadow-sm"><h6 class="small fw-bold text-muted">Guests (Month)</h6><h4 class="fw-bold text-success" id="boxMtdGuests">0</h4></div></div>
@@ -129,7 +119,7 @@
                     </div>
                 </div>
 
-                <!-- TAB CONTAINER: Live Operational Tracking Pipelines Engine -->
+                <!-- TAB CONTAINER: Flow Monitoring -->
                 <div id="manage-view" class="tab-pane animate-fade-in" style="display:none;">
                     <div class="row">
                         <div class="col-md-8">
@@ -138,20 +128,10 @@
                                 <div id="live-timers-container" class="row g-3"></div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card p-3 bg-light">
-                                <h6 class="fw-bold text-dark border-bottom pb-2">♨️ Post-Massage Steam Chambers Controller</h6>
-                                <div class="mb-3"><label class="small fw-bold text-success">Steam Chamber Alpha (Max 20m)</label><div id="steam-room-1-status" class="p-2 border rounded bg-white text-muted small">Vacant</div></div>
-                                <div class="mb-3"><label class="small fw-bold text-success">Steam Chamber Beta (Max 20m)</label><div id="steam-room-2-status" class="p-2 border rounded bg-white text-muted small">Vacant</div></div>
-                                <hr>
-                                <h6 class="small fw-bold text-muted text-uppercase tracking-wider">Queue Tea-Waiting Pools (Counting Down)</h6>
-                                <div id="queue-waiting-pool"></div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <!-- TAB CONTAINER: Commissions Due Ledger -->
+                <!-- TAB CONTAINER: Commission Board -->
                 <div id="commissions-view" class="tab-pane animate-fade-in" style="display:none;">
                     <div class="card p-4">
                         <h5 class="fw-bold text-dark mb-3">Channel Partners Commissions Due Matrix Balance Sheet</h5>
@@ -166,25 +146,21 @@
                     </div>
                 </div>
 
-                <!-- TAB CONTAINER: Accounting Ledger Audits Trails -->
+                <!-- TAB CONTAINER: Financial Ledgers -->
                 <div id="financials-view" class="tab-pane animate-fade-in" style="display:none;">
                     <div class="d-flex justify-content-between align-items-center mb-3 gap-2 no-print">
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-dark fw-bold" onclick="exportDataGridToExcelCSV('financials-table-export-target', 'Financial_Ledgers')">📥 Export CSV Spreadsheet</button>
-                        </div>
                         <div class="d-flex gap-4 align-items-center bg-white border px-3 py-1 rounded shadow-sm">
                             <div class="small fw-bold text-muted">Gross MTD: <span id="metricGrossCollected" class="text-success fw-bold">0.00</span></div>
                             <div class="small fw-bold text-muted">Comm MTD: <span id="metricCommissionOutflow" class="text-info fw-bold">0.00</span></div>
                             <div class="small fw-bold text-muted">Net House MTD: <span id="metricNetHouseRevenue" class="text-primary fw-bold">0.00</span></div>
                         </div>
-                        <button class="btn btn-danger fw-bold" onclick="triggerDayEndProcessSequenceClosure()">🔒 RUN DAY END LOCK PROCESS</button>
                     </div>
                     <div class="card p-4">
                         <h5 class="fw-bold text-success mb-3">Audited Double-Entry Cash Audit Trails Separation Register</h5>
                         <div class="table-responsive">
                             <table class="table small align-middle" id="financials-table-export-target">
                                 <thead class="table-light">
-                                    <tr><th>Ledger ID</th><th>Guest Name Reference</th><th>Base Revenue</th><th>VAS Revenue</th><th>Gross Collected (LKR)</th><th>Settlement Type</th><th>Timestamp</th><th>Day Lock State</th></tr>
+                                    <tr><th>Ledger ID</th><th>Guest Name Reference</th><th>Base Revenue</th><th>VAS Revenue</th><th>Gross Collected (LKR)</th><th>Settlement Type</th><th>Timestamp</th></tr>
                                 </thead>
                                 <tbody id="financials-table-body"></tbody>
                             </table>
@@ -192,7 +168,7 @@
                     </div>
                 </div>
 
-                <!-- TAB CONTAINER: Guest Profiles Archive Index -->
+                <!-- TAB CONTAINER: Guest Registry -->
                 <div id="guests-view" class="tab-pane animate-fade-in" style="display:none;">
                     <div class="card p-4">
                         <h5 class="fw-bold text-success mb-3">Registered Client Directory Profiles File Index</h5>
@@ -206,45 +182,11 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- TAB CONTAINER: Analytics Intelligence Center -->
-                <div id="reports-view" class="tab-pane animate-fade-in" style="display:none;">
-                    <div class="card p-3 mb-3 border-0 bg-light no-print">
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-4"><label class="small fw-bold">Query From Date Range</label><input type="date" id="rptDateFrom" class="form-control form-control-sm"></div>
-                            <div class="col-md-4"><label class="small fw-bold">Query To Date Range</label><input type="date" id="rptDateTo" class="form-control form-control-sm"></div>
-                            <div class="col-md-4"><button class="btn btn-sm btn-success w-100 fw-bold" onclick="compileStrategicReportHubAnalytics()">Run Periodic Query Audit</button></div>
-                        </div>
-                    </div>
-                    <div class="card p-4">
-                        <h5 class="fw-bold text-success mb-4">Strategic Business Intelligence Analytical Reports Hub</h5>
-                        <div class="row g-3 text-center mb-4" id="reports-injection-zone"></div>
-                    </div>
-                </div>
-
-                <!-- TAB CONTAINER: Backoffice Administration Matrix -->
-                <div id="admin-view" class="tab-pane animate-fade-in" style="display:none;">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="list-group shadow-sm border-0" id="adminSubTabsList">
-                                <button class="list-group-item list-group-item-action active" data-tab="treatments" onclick="showAdminSubTab('treatments')">Manage Treatments</button>
-                                <button class="list-group-item list-group-item-action" data-tab="therapists" onclick="showAdminSubTab('therapists')">Manage Therapists</button>
-                                <button class="list-group-item list-group-item-action" data-tab="users" onclick="showAdminSubTab('users')">Manage Users</button>
-                                <button class="list-group-item list-group-item-action" data-tab="rooms" onclick="showAdminSubTab('rooms')">Manage Rooms</button>
-                                <button class="list-group-item list-group-item-action" data-tab="introducers" onclick="showAdminSubTab('introducers')">Manage Introducers</button>
-                                <button class="list-group-item list-group-item-action text-danger fw-bold" data-tab="system" onclick="showAdminSubTab('system')">API Handshakes</button>
-                            </div>
-                        </div>
-                        <div class="col-md-9">
-                            <div id="admin-content" class="card shadow-sm p-4 border-0"></div>
-                        </div>
-                    </div>
-                </div>
             </main>
         </div>
     </div>
 
-    <!-- TOUCH POS SCREEN COMPONENT PANEL MODULE -->
+    <!-- TOUCH POS TERMINAL SCREEN PANEL MODAL -->
     <div class="modal fade" id="Modal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-fullscreen">
             <div class="modal-content border-0 bg-black">
@@ -258,10 +200,10 @@
                         <div class="container-fluid px-0">
                             <div class="row g-4">
                                 
-                                <!-- LEFT VIEW CONTAINER: Operations Form Workspace (65% Width) -->
+                                <!-- LEFT VIEW PANEL: Workspace Configuration Layout -->
                                 <div class="col-lg-8 col-md-7">
                                     
-                                    <!-- NODE 1: Location Workspace Selector -->
+                                    <!-- STEP 1: Room Assignment Node -->
                                     <div class="pos-step-card p-4 bg-gradient-dark rounded-3 mb-4">
                                         <div class="d-flex align-items-center mb-3">
                                             <span class="badge bg-success me-2 fs-6">1</span>
@@ -270,12 +212,12 @@
                                         <div class="form-group">
                                             <label class="form-label text-muted small fw-bold">Select Active Physical Target Room Location</label>
                                             <select id="bulkIntakeRoomSelect" class="form-select form-select-lg bg-black text-white border-secondary touch-control py-3" required>
-                                                <!-- Populated dynamically -->
+                                                <!-- Synchronized dynamically -->
                                             </select>
                                         </div>
                                     </div>
 
-                                    <!-- NODE 2: Guest Sub-allocation Workspace -->
+                                    <!-- STEP 2: Guest Processing Workspace Matrix -->
                                     <div class="pos-step-card p-4 bg-gradient-dark rounded-3 mb-4">
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <div class="d-flex align-items-center">
@@ -287,22 +229,23 @@
                                             </button>
                                         </div>
                                         
-                                        <!-- COLUMN HEADER LABELS FOR TOUCH SCANNABILITY -->
-                                        <div class="row g-2 px-3 mb-1 text-uppercase text-muted fw-bold small">
+                                        <!-- EXPLICIT VISUAL RUNWAY LABELS -->
+                                        <div class="row g-2 px-3 mb-2 text-uppercase text-muted fw-bold small border-bottom border-secondary pb-2">
                                             <div class="col-md-3">Guest Full Name</div>
                                             <div class="col-md-3">Selected Treatment Ritual</div>
                                             <div class="col-md-2">Linked Therapist</div>
                                             <div class="col-md-2">VAS Fee (රු.)</div>
                                             <div class="col-md-1">Disc (%)</div>
-                                            <div class="col-md-1 text-end">Action</div>
+                                            <div class="col-md-1 text-end">Drop</div>
                                         </div>
 
+                                        <!-- THE TARGET INNER STORAGE LAYER FOR SYSTEM ROW GENERATION -->
                                         <div id="dynamic-guests-rows-container" style="max-height: 420px; overflow-y: auto;">
-                                            <!-- ROW TEMPLATE INJECTED VIA JAVASCRIPT -->
+                                            <!-- CRITICAL ARCHITECTURAL FIX: Completely empty. Form elements are rendered purely via production script templates. -->
                                         </div>
                                     </div>
 
-                                    <!-- NODE 3: Intermediary Link & Tracker Node Mapping -->
+                                    <!-- STEP 3: Introducer Tracking Matrix -->
                                     <div class="pos-step-card p-4 bg-gradient-dark rounded-3 mb-4">
                                         <div class="d-flex align-items-center mb-3">
                                             <span class="badge bg-success me-2 fs-6">3</span>
@@ -311,11 +254,11 @@
                                         <div class="form-group">
                                             <label class="form-label text-muted small fw-bold">Select Active Introducer Partner</label>
                                             <select id="bulkIntakeIntroducerSelect" class="form-select form-select-lg bg-black text-white border-secondary touch-control py-3">
-                                                <!-- Populated dynamically -->
+                                                <!-- Synchronized dynamically -->
                                             </select>
                                         </div>
 
-                                        <!-- CONDITIONAL SUB-COMPONENTS WRAPPER -->
+                                        <!-- CONDITIONAL TRANSITION ENVELOPE CONTROLLER -->
                                         <div id="conditionalCommissionWrapper" class="mt-3 p-3 bg-black rounded-3 border border-secondary" style="display: none;">
                                             <div class="row g-3">
                                                 <div class="col-md-6">
@@ -334,17 +277,17 @@
                                     </div>
                                 </div>
 
-                                <!-- RIGHT VIEW CONTAINER: Live Receipt View Screen (35% Width) -->
+                                <!-- RIGHT VIEW PANEL: Continuous Receipt Output Monitor (35% Width) -->
                                 <div class="col-lg-4 col-md-5">
                                     <div class="pos-sidebar-monitor">
                                         
-                                        <!-- Real-Time Accounting Matrix Container -->
+                                        <!-- Real-Time Receipts Widget Node -->
                                         <div id="posLiveSummaryWidgetContainer"></div>
 
-                                        <!-- NODE 5: Ledger Settlement Runway -->
+                                        <!-- STEP 5: Cash Ledger Settlement Choice -->
                                         <div class="pos-step-card p-4 bg-gradient-dark rounded-3 mt-4">
                                             <div class="mb-4">
-                                                <label class="form-label text-muted small text-uppercase tracking-wider fw-bold mb-2">Settlement Method Pathway Choice</label>
+                                                <label class="form-label text-muted small text-uppercase tracking-wider fw-bold mb-2">Settlement Method Choice</label>
                                                 <select id="bulkSettlementMethod" class="form-select form-select-lg bg-success text-white border-0 fw-bold py-3 text-center touch-control fs-5">
                                                     <option value="Cash">💵 CASH SETTLEMENT</option>
                                                     <option value="Card">💳 CREDIT / DEBIT CARD</option>
@@ -375,10 +318,7 @@
         </div>
     </div>
 
-    <!-- Supplementary Data Modals Modifiers Layer -->
-    <div class="modal fade" id="editGuestModal" data-bs-backdrop="static" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-success text-white"><h5 class="modal-title fw-bold">Update Client Parameters Profile</h5><button type="button" class="btn-close btn-close-white" onclick="safeCloseModal('editGuestModal')"></button></div><div class="modal-body"><form id="editGuestForm"><input type="hidden" id="editGuestRecordId"><div class="mb-2"><label class="small fw-bold">Full Identity Name</label><input type="text" id="editGuestFullName" class="form-control form-control-sm" required></div><button type="submit" class="btn btn-success w-100 fw-bold btn-sm">Commit Changes Profile</button></form></div></div></div></div>
-
-    <!-- JavaScript Module Dependencies Bundle -->
+    <!-- JavaScript Dependencies Loader Layout -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/system_config.js"></script>
@@ -389,10 +329,18 @@
     <script src="js/steamQueue.js"></script>
     <script src="js/introducer.js"></script>
     <script src="js/dashboard.js"></script>
-    <script src="js/bookings.js"></script>
-    <script src="js/financials.js"></script>
-    <script src="js/guests.js"></script>
-    <script src="js/reports.js"></script>
-    <script src="js/admin.js"></script>
+
+    <!-- CRITICAL FIX: Appending cache-busting timestamp tokens to force github server to drop old memory caches -->
+    <script>
+        const cacheBustQueryParamStr = "?v=" + Date.now();
+        const coreScriptPathsMatrix = ["js/bookings.js", "js/financials.js", "js/guests.js", "js/reports.js", "js/admin.js"];
+        
+        coreScriptPathsMatrix.forEach(path => {
+            let scriptTagElement = document.createElement('script');
+            scriptTagElement.src = path + cacheBustQueryParamStr;
+            scriptTagElement.async = false;
+            document.body.appendChild(scriptTagElement);
+        });
+    </script>
 </body>
 </html>
