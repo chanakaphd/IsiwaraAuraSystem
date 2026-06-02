@@ -1,20 +1,18 @@
 /**
- * Isiwara Aura - Production Operations & POS Accounting Engine
- * RE-ARRANGED: Fixed routing parameters, decoupled mapping, and reactive metrics.
+ * Isiwara Aura - Advanced Production Operations & Modern POS Checkout Controller
+ * Upgraded for sequential integrity, conditional tracking logic, and future touch-ready UI layouts.
  */
 
-// Global Cache State Matrix
+// Global App State Matrix
 var cacheRooms = [];
 var cacheIntroducers = [];
 
 /**
- * 1. Global Cache Initialization (Queries the TABLE Endpoints)
+ * 1. Synchronous Cloud Boot Handshake
  */
 async function initializeGlobalCaches() {
     try {
-        console.log("📡 Initializing cloud sync handshake for base tables...");
-        
-        // CRITICAL FIX: We must fetch the actual TABLES ('Rooms', 'Introducers')
+        console.log("📡 Core Sync: Initializing cloud data tables...");
         const [roomsResponse, introducersResponse] = await Promise.all([
             fetchAirtableTableRecords('Rooms'),
             fetchAirtableTableRecords('Introducers')
@@ -22,72 +20,74 @@ async function initializeGlobalCaches() {
         
         cacheRooms = roomsResponse || [];
         cacheIntroducers = introducersResponse || [];
-        
-        console.log("✅ Cloud Sync Handshake Success:", { 
-            roomsFetched: cacheRooms.length, 
-            introducersFetched: cacheIntroducers.length 
-        });
-    } catch (networkException) {
-        console.error("❌ Cache Engine Initialization Failed:", networkException);
+        console.log("✅ Core Sync Success:", { rooms: cacheRooms.length, introducers: cacheIntroducers.length });
+    } catch (e) {
+        console.error("❌ Core Sync Failed:", e);
     }
 }
 
 /**
- * 2. Dropdown UI Population Layer (Maps to internal COLUMN Fields)
+ * 2. Smart Form Interactivity & Conditional Layout Layer
  */
 function safelyForcePopulatePOSDropdownFields() {
-    console.log("📥 Injecting memory arrays into physical UI dropdown selectors...");
-
     const roomSelect = document.getElementById('bulkIntakeRoomSelect');
     const introSelect = document.getElementById('bulkIntakeIntroducerSelect');
 
-    // Populate Target Rooms
-    if (roomSelect) {
-        if (cacheRooms.length === 0) {
-            roomSelect.innerHTML = `<option value="">❌ No Rooms Loaded from Server</option>`;
-        } else {
-            roomSelect.innerHTML = cacheRooms.map(room => {
-                const recordId = room.id;
-                const roomNumberValue = room.fields['Room Number']; // Column Header reference
-                
-                if (!roomNumberValue) return ''; // Skip uninitialized rows gracefully
-                return `<option value="${recordId}">Treatment Room ${roomNumberValue}</option>`;
-            }).join('');
-        }
+    if (roomSelect && cacheRooms.length > 0) {
+        roomSelect.innerHTML = cacheRooms.map(room => 
+            `<option value="${room.id}">Treatment Room ${room.fields['Room Number'] || 'N/A'}</option>`
+        ).join('');
     }
 
-    // Populate Partner Introducers
     if (introSelect) {
-        let initialOptions = `<option value="Direct">Direct Walk-In (No Commission)</option>`;
-        
+        let options = `<option value="Direct">Direct Walk-In (No Commission)</option>`;
         if (cacheIntroducers.length > 0) {
-            const dynamicOptions = cacheIntroducers.map(intro => {
-                const recordId = intro.id;
-                const fullNameValue = intro.fields['Full Name']; // Column Header reference
-                
-                if (!fullNameValue) return '';
-                return `<option value="${recordId}">${fullNameValue}</option>`;
-            }).join('');
-            introSelect.innerHTML = initialOptions + dynamicOptions;
-        } else {
-            introSelect.innerHTML = initialOptions;
+            options += cacheIntroducers.map(intro => 
+                `<option value="${intro.id}">${intro.fields['Full Name'] || 'Unnamed Partner'}</option>`
+            ).join('');
         }
+        introSelect.innerHTML = options;
+    }
+
+    // Bind conditional UI visibility toggles
+    if (introSelect) {
+        introSelect.addEventListener('change', toggleConditionalCommissionFields);
+        toggleConditionalCommissionFields(); // Execute initially
     }
 }
 
 /**
- * 3. POS Live Accounting Calculation & Summary Render Node
+ * Toggles visibility of the Commission section depending on whether a real partner is chosen
+ */
+function toggleConditionalCommissionFields() {
+    const introSelect = document.getElementById('bulkIntakeIntroducerSelect');
+    const commissionWrapper = document.getElementById('conditionalCommissionWrapper');
+    
+    if (!introSelect || !commissionWrapper) return;
+    
+    if (introSelect.value === 'Direct' || introSelect.value === '') {
+        commissionWrapper.style.display = 'none'; // Clear from view for Direct Walk-ins
+    } else {
+        commissionWrapper.style.display = 'block'; // Make visible for active partners
+        // Ensure sub-labels correspond to current measurement scales
+        if (typeof toggleCommissionAddonLabel === 'function') toggleCommissionAddonLabel();
+    }
+    updateLiveIntakeSummaryDisplayLayer();
+}
+
+/**
+ * 3. Reactive Accounting Summary Engine
  */
 function updateLiveIntakeSummaryDisplayLayer() {
-    const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row');
-    if (containerRows.length === 0) return;
-
+    const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row, [id^="guest-row-"]');
+    
     let totalTreatmentAmount = 0;
     let totalVasAmount = 0;
     let totalDiscountAmount = 0;
+    let totalCommissionAmount = 0;
 
+    // Gather inputs accurately across changing row formats
     containerRows.forEach(row => {
-        // Query numeric entry arrays safely
         const priceInput = row.querySelector('.package-price-input') || row.querySelectorAll('input[type="number"]')[0];
         const vasInput = row.querySelector('.vas-fee-input') || row.querySelectorAll('input[type="number"]')[1];
         const discInput = row.querySelector('.discount-input') || row.querySelectorAll('input[type="number"]')[2];
@@ -96,25 +96,44 @@ function updateLiveIntakeSummaryDisplayLayer() {
         const vasFee = parseFloat(vasInput?.value) || 0;
         const discountPercentage = parseFloat(discInput?.value) || 0;
 
-        const calculatedDiscount = basePrice * (discountPercentage / 100);
-
         totalTreatmentAmount += basePrice;
         totalVasAmount += vasFee;
-        totalDiscountAmount += calculatedDiscount;
+        totalDiscountAmount += (basePrice * (discountPercentage / 100));
     });
 
-    const aggregateNetTotal = (totalTreatmentAmount - totalDiscountAmount) + totalVasAmount;
-    const summaryWidgetContainer = document.getElementById('posLiveSummaryWidgetContainer');
+    // Check conditional tracking state for calculated allocations
+    const introSelect = document.getElementById('bulkIntakeIntroducerSelect');
+    const isPartnerActive = introSelect && introSelect.value !== 'Direct' && introSelect.value !== '';
     
-    if (summaryWidgetContainer) {
-        summaryWidgetContainer.innerHTML = `
-            <div class="card bg-dark text-white border-secondary p-3 mt-3 animate-fade-in">
-                <div class="d-flex justify-content-between my-1"><span class="small text-muted">Gross Treatment Base:</span> <span class="font-monospace">රු. ${totalTreatmentAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
-                <div class="d-flex justify-content-between my-1"><span class="small text-muted">Value Added Services (VAS):</span> <span class="font-monospace">රු. ${totalVasAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
-                <div class="d-flex justify-content-between my-1 text-danger"><span class="small text-danger fw-bold">Deductions / Discounts:</span> <span class="font-monospace">-රු. ${totalDiscountAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
-                <div class="border-top border-secondary my-2 pt-2 d-flex justify-content-between align-items-center">
-                    <span class="fw-bold text-success">NET SETTLEMENT TOTAL:</span>
-                    <span class="fs-4 fw-bold text-success font-monospace">රු. ${aggregateNetTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+    if (isPartnerActive) {
+        const commType = document.getElementById('intakeCommType')?.value || 'LKR';
+        const commValueInput = parseFloat(document.getElementById('intakeCommValue')?.value) || 0;
+
+        if (commType === 'PCT') {
+            // Rule: Commission Split Rate (%) calculation applies strictly to Base Treatment values
+            totalCommissionAmount = totalTreatmentAmount * (commValueInput / 100);
+        } else {
+            // Flat absolute value allocation
+            totalCommissionAmount = commValueInput;
+        }
+    }
+
+    const netSettlementTotal = (totalTreatmentAmount - totalDiscountAmount) + totalVasAmount;
+    const summaryBox = document.getElementById('posLiveSummaryWidgetContainer');
+    
+    if (summaryBox) {
+        summaryBox.innerHTML = `
+            <div class="card bg-dark border-secondary text-white p-3 shadow rounded-3 animate-fade-in">
+                <div class="text-uppercase tracking-wider small text-muted mb-2 border-bottom border-secondary pb-1">Operational Receipt Matrix</div>
+                <div class="d-flex justify-content-between my-1"><span>Treatment Treatments Base:</span> <span class="font-monospace fw-bold">රු. ${totalTreatmentAmount.toFixed(2)}</span></div>
+                <div class="d-flex justify-content-between my-1"><span>Value Added Services (VAS):</span> <span class="font-monospace">රු. ${totalVasAmount.toFixed(2)}</span></div>
+                <div class="d-flex justify-content-between my-1 text-danger"><span>Deductions / Discounts:</span> <span class="font-monospace">-රු. ${totalDiscountAmount.toFixed(2)}</span></div>
+                ${isPartnerActive ? `
+                <div class="d-flex justify-content-between my-1 text-info"><span>Calculated Commission Allocation:</span> <span class="font-monospace">රු. ${totalCommissionAmount.toFixed(2)}</span></div>
+                ` : ''}
+                <div class="border-top border-secondary mt-2 pt-2 d-flex justify-content-between align-items-center">
+                    <span class="text-success fw-bold">NET TOTAL DUE:</span>
+                    <span class="fs-4 fw-bold text-success font-monospace">රු. ${netSettlementTotal.toFixed(2)}</span>
                 </div>
             </div>`;
     }
@@ -124,91 +143,117 @@ function updateLiveIntakeSummaryDisplayLayer() {
  * 4. Micro-Execution Orchestrator Lifecycle
  */
 document.addEventListener("DOMContentLoaded", async () => {
-    // Stage A: Await data sync synchronously prior to drawing elements
+    // Stage A: Load data records completely before parsing the UI view model
     await initializeGlobalCaches();
-    
-    // Stage B: Inject variables into visual layout
     safelyForcePopulatePOSDropdownFields();
     updateLiveIntakeSummaryDisplayLayer();
 
-    // Stage C: Bind Event Listener Modules
+    // Stage B: Event Subscriptions setup
     const bulkIntakeForm = document.getElementById('bulkIntakeForm');
     if (bulkIntakeForm) {
         bulkIntakeForm.addEventListener('input', updateLiveIntakeSummaryDisplayLayer);
         bulkIntakeForm.addEventListener('change', updateLiveIntakeSummaryDisplayLayer);
 
-        // Form Submit Handler Block
+        // Core Transaction Lodgment Pipeline
         bulkIntakeForm.onsubmit = async (e) => {
             e.preventDefault();
-            console.log("🚀 Pipeline Execution: Spawning transaction transaction tree...");
-            
+            console.log("🚀 Initializing checkout pipeline transaction loop...");
+
             try {
-                const targetRoomRecordId = document.getElementById('bulkIntakeRoomSelect').value;
-                const targetIntroducerRecordId = document.getElementById('bulkIntakeIntroducerSelect').value;
+                const targetRoomRecordId = document.getElementById('bulkIntakeRoomSelect')?.value;
+                const targetIntroducerRecordId = document.getElementById('bulkIntakeIntroducerSelect')?.value;
+                const settlementMethodPathway = document.getElementById('bulkSettlementMethod')?.value || 'Cash';
 
                 if (!targetRoomRecordId) {
-                    throw new Error("UI Isolation Fault: Cannot process invoice without valid room assignment registration.");
+                    throw new Error("Validation Guard: Missing target physical treatment room registration.");
                 }
 
-                const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row');
-                
+                const containerRows = document.querySelectorAll('#dynamic-guests-rows-container .row, .dynamic-guest-row, [id^="guest-row-"]');
+                if (containerRows.length === 0) throw new Error("Transaction cancelled: No active guest entries recorded.");
+
                 for (let row of containerRows) {
                     const nameField = row.querySelector('input[type="text"]');
-                    if (!nameField) continue;
-                    const guestNameStr = nameField.value.trim();
+                    const guestNameStr = nameField ? nameField.value.trim() : "";
                     if (!guestNameStr) continue;
 
+                    // Numeric values extraction
                     const inputs = row.querySelectorAll('input[type="number"]');
                     const rawPackagePrice = inputs[0] ? parseFloat(inputs[0].value) || 0 : 0;
                     const manualVasFee = inputs[1] ? parseFloat(inputs[1].value) || 0 : 0;
                     const discountPercentage = inputs[2] ? parseFloat(inputs[2].value) || 0 : 0;
-                    
+
                     const calculatedDiscountAmount = rawPackagePrice * (discountPercentage / 100);
                     const netBaseRevenue = rawPackagePrice - calculatedDiscountAmount;
 
-                    // Write Node A: Register unique Guest Profile
-                    let guestProfileRecord = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
-                    if (!guestProfileRecord || !guestProfileRecord.id) throw new Error("Data Lodgment Break: Guest generation aborted by host.");
+                    // Execution Step 1: Create Guest Profile Node
+                    let guestRecord = await dispatchPostRESTRequestHandshake('Guests', { "Full Name": guestNameStr });
+                    if (!guestRecord || !guestRecord.id) throw new Error(`Host rejected unique profile creation for: ${guestNameStr}`);
 
-                    // Write Node B: Link Booking Entry to assigned parameters
-                    let bookingEntryRecord = await dispatchPostRESTRequestHandshake('Bookings', {
-                        "Guest": [guestProfileRecord.id],
+                    // Execution Step 2: Establish Booking Registry Node
+                    let bookingRecord = await dispatchPostRESTRequestHandshake('Bookings', {
+                        "Guest": [guestRecord.id],
                         "Room": [targetRoomRecordId],
                         "Status": "Completed"
                     });
-                    if (!bookingEntryRecord || !bookingEntryRecord.id) throw new Error("Data Lodgment Break: Booking generation aborted by host.");
+                    if (!bookingRecord || !bookingRecord.id) throw new Error("Operational pipeline failure establishing tracking Booking reference.");
 
-                    // Write Node C: Dispatch Ledger Double-Entry
+                    // Execution Step 3: Populate and Post Double-Entry Financial Ledger
                     const financialPayload = {
-                        "Booking Link": [bookingEntryRecord.id],
+                        "Booking Link": [bookingRecord.id],
                         "Base Revenue": Number(netBaseRevenue) || 0,
                         "VAS Revenue": Number(manualVasFee) || 0,
-                        "Settlement Type": document.getElementById('bulkSettlementMethod')?.value || 'Cash'
+                        "Settlement Type": settlementMethodPathway
                     };
 
-                    const finResult = await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
-                    if (!finResult || finResult.error) throw new Error(`Double-Entry Balancing Aborted: ${finResult ? finResult.error.message : 'Unknown rejection'}`);
+                    console.log("Lodging transaction profile:", financialPayload);
+                    const ledgerResult = await dispatchPostRESTRequestHandshake('Financial Ledger', financialPayload);
+                    if (!ledgerResult || ledgerResult.error) {
+                        throw new Error(`Accounting Vault Rejection: ${ledgerResult ? ledgerResult.error.message : 'Unknown Fault'}`);
+                    }
 
-                    // Write Node D: Optional Commission Allocation
-                    if (targetIntroducerRecordId && targetIntroducerRecordId !== "Direct") {
+                    // Execution Step 4: Conditional Commission Ledger Allocation Node
+                    if (targetIntroducerRecordId && targetIntroducerRecordId !== 'Direct') {
+                        const commType = document.getElementById('intakeCommType')?.value || 'LKR';
+                        const commValueInput = parseFloat(document.getElementById('intakeCommValue')?.value) || 0;
+                        
+                        let assignedCommPct = 0;
+                        if (commType === 'PCT') {
+                            assignedCommPct = commValueInput;
+                        }
+
                         const commissionPayload = {
-                            "Booking Link": [bookingEntryRecord.id],
+                            "Booking Link": [bookingRecord.id],
                             "Introducer Link": [targetIntroducerRecordId],
                             "Total Volume Base": Number(rawPackagePrice + manualVasFee) || 0,
-                            "Commission Percentage": document.getElementById('intakeCommType')?.value === 'PCT' ? (parseInt(document.getElementById('intakeCommValue').value, 10) || 0) : 0,
+                            "Commission Percentage": Number(assignedCommPct),
                             "Payout Status": "Pending"
                         };
+
+                        console.log("Lodging agency payload:", commissionPayload);
                         await dispatchPostRESTRequestHandshake('Commissions Ledger', commissionPayload);
                     }
                 }
 
-                alert("🟢 Transaction Successfully Logged to System Cloud Infrastructure.");
+                alert("🟢 POS Transaction Securely Transmitted & Recorded to Cloud Ledgers.");
                 location.reload();
 
-            } catch (pipelineException) {
-                console.error("❌ Critical POS System Runtime Interruption:", pipelineException);
-                alert("Transaction Execution Aborted:\n" + pipelineException.message);
+            } catch (pipelineFault) {
+                console.error("❌ Critical Pipeline Halt:", pipelineFault);
+                alert("POS Execution Aborted:\n" + pipelineFault.message);
             }
         };
     }
 });
+
+/**
+ * 5. Utility Layout Switchers
+ */
+function toggleCommissionAddonLabel() {
+    const typeSelect = document.getElementById('intakeCommType');
+    const label = document.getElementById('lblCommValue');
+    if (!typeSelect || !label) return;
+    
+    label.innerText = typeSelect.value === 'LKR' 
+        ? 'Commission Value Allocation (රු.)' 
+        : 'Commission Percentage Split Rate (%)';
+}
