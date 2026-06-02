@@ -2,7 +2,25 @@
  * Isiwara Aura - Production Operations & POS Accounting Engine
  * RE-ARRANGED: Sequential integrity, robust error handling, and singular naming convention.
  */
+// Global Cache State
+var cacheRooms = [];
+var cacheIntroducers = [];
 
+async function initializeGlobalCaches() {
+    try {
+        const [rooms, intro] = await Promise.all([
+            fetchAirtableTableRecords('Rooms'),
+            fetchAirtableTableRecords('Introducers')
+        ]);
+        cacheRooms = rooms || [];
+        cacheIntroducers = intro || [];
+        console.log("Global caches initialized:", { rooms: cacheRooms.length, intro: cacheIntroducers.length });
+    } catch (e) {
+        console.error("Cache initialization failed:", e);
+    }
+}
+// Call this once on load
+initializeGlobalCaches();
 // 1. Core Data Retrieval (Modularized for reliability)
 async function fetchAndRenderMasterScheduleView() {
     const tableBody = document.getElementById('data-table-body');
