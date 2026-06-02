@@ -12,10 +12,12 @@ async function fetchAndRenderMasterScheduleView() {
     tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 font-monospace small text-muted">Synchronizing active data streams from cloud...</td></tr>`;
     
     try {
-        const [bookingsData, financialsData] = await Promise.all([
-            fetchAirtableTableRecords('Bookings'),
-            fetchAirtableTableRecords('Financial Ledger'), // Must match Airtable Tab Name Exactly
-        ]);
+        // Locate this section and update the name:
+const [bookingsData, financialsData, commissionsData] = await Promise.all([
+    fetchAirtableTableRecords('Bookings'),
+    fetchAirtableTableRecords('Financial Ledger'),  // Ensure this is singular now
+    fetchAirtableTableRecords('Commissions Ledger')
+]);
 
         const activeBookings = bookingsData || [];
         const activeFinancials = financialsData || [];
