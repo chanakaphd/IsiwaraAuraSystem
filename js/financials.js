@@ -9,7 +9,7 @@ async function fetchAndRenderFinancialsListView() {
     tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-3 font-monospace small">Streaming double-entry ledger rows...</td></tr>`;
 
     try {
-        const financialsData = await fetchAirtableTableRecords('Financial Ledgers');
+        const financialsData = await fetchAirtableTableRecords('Financial Ledger');
         const activeFinancials = financialsData || [];
 
         tableBody.innerHTML = activeFinancials.map(ledger => {
