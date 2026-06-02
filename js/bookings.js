@@ -338,12 +338,12 @@ if (!finResult) {
                 document.getElementById('posLiveSummaryWidgetContainer').innerHTML = "";
                 await fetchAndRenderMasterScheduleView();
 
-            } catch (executionError) {
-                console.error("POS Exception caught:", executionError);
+           } catch (executionError) {
+                console.error("Critical POS Exception caught:", executionError);
             }
-        };
-    }
-});
+        }; // Closes onsubmit
+    } // Closes if(bulkIntakeForm)
+}); // Closes DOMContentLoaded
 function toggleCommissionAddonLabel() {
     const type = document.getElementById('intakeCommType').value;
     const label = document.getElementById('lblCommValue');
