@@ -256,19 +256,24 @@ document.addEventListener("DOMContentLoaded", () => {
                         "Status": "Completed"
                     });
 
-                    // STRICT LODGMENT: Only proceed if payload is mathematically valid
-const financialPayload = {
+                   // --- LOGGING FOR DEBUGGING ---
+console.log("Attempting to lodge financial data:", {
     "Booking Link": [bookingEntryRecord.id],
-    "Base Revenue": parseFloat(netBaseRevenue.toFixed(2)),
-    "VAS Revenue": parseFloat(manualVasFee.toFixed(2)),
+    "Base Revenue": Number(netBaseRevenue),
+    "VAS Revenue": Number(manualVasFee)
+});
+
+// --- FINAL LODGMENT ENGINE ---
+const finResult = await dispatchPostRESTRequestHandshake('Financial Ledgers', {
+    "Booking Link": [bookingEntryRecord.id],
+    "Base Revenue": Number(netBaseRevenue) || 0,
+    "VAS Revenue": Number(manualVasFee) || 0,
     "Settlement Type": settlementMethodPathway
-    // Note: 'Gross Collected' is removed because Airtable Formula does it.
-    // If you do not use a formula, add: "Gross Collected": parseFloat(grossCollectedTotal.toFixed(2))
-};
+});
 
-console.log("Lodging Payload:", financialPayload); // DEBUG: Check this in Console
-const finRes = await dispatchPostRESTRequestHandshake('Financial Ledgers', financialPayload);
-
+if (!finResult) {
+    console.error("Financial Lodgment Failed. Check column names in Airtable.");
+}
                         collectedReceiptItems.push({
                             bookingId: bookingEntryRecord.fields['Booking ID'] || "BK-AURA",
                             guestName: guestNameStr,
