@@ -1,36 +1,37 @@
 /**
- * Isiwara Aura - Guest Profile Directory Matrix
+ * js/guests.js
+ * Client Profiles Directory List Layer Module
  */
 
-async function fetchAndRenderGuestRegistryMatrix() {
-    const tableBody = document.getElementById('guest-table-body');
-    if (!tableBody) return;
+async function fetchAndRenderClientProfileMatrixGrid() {
+    const rootTargetContainerTableBody = document.getElementById('guest-table-body');
+    if (!rootTargetContainerTableBody) return;
 
-    tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-3 text-muted">Extracting registered client parameters...</td></tr>`;
+    rootTargetContainerTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">Syncing client profiles...</td></tr>`;
 
-    const guestRecords = await fetchAirtableTableRecords('Guests');
+    const downstreamGuestsCollectionRecords = await fetchAirtableTableRecords('Guests');
 
-    if (guestRecords.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No client records found in database.</td></tr>`;
+    if (downstreamGuestsCollectionRecords.length === 0) {
+        rootTargetContainerTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No profile indexes built.</td></tr>`;
         return;
     }
 
-    tableBody.innerHTML = guestRecords.map(record => {
-        const fields = record.fields;
+    rootTargetContainerTableBody.innerHTML = downstreamGuestsCollectionRecords.map(profile => {
+        const fields = profile.fields;
         return `
             <tr>
-                <td><strong class="font-monospace text-muted">${record.id.slice(-6).toUpperCase()}</strong></td>
-                <td class="fw-bold text-success">👥 ${fields['Full Name'] || 'Anonymous Guest'}</td>
-                <td>🇱🇰 Sri Lanka</td>
-                <td><span class="text-muted small">Not Verified</span></td>
-                <td><span class="text-muted small">N/A</span></td>
-                <td><span class="badge bg-light text-secondary">Walk-In Counter</span></td>
+                <td><strong class="font-monospace text-muted">${profile.id.slice(-6).toUpperCase()}</strong></td>
+                <td class="fw-bold text-success">👤 ${fields['Full Name'] || 'Walk-In Customer'}</td>
+                <td>${fields['Country'] || 'Sri Lanka'}</td>
+                <td class="font-monospace small text-white-50">${fields['Phone Number'] || 'N/A'}</td>
+                <td class="small">${fields['Email'] || 'N/A'}</td>
+                <td><span class="badge bg-dark text-slate">${fields['Hotel / Staying Place'] || 'Counter Walk-In'}</span></td>
             </tr>`;
     }).join('');
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById('guest-table-body')) {
-        fetchAndRenderGuestRegistryMatrix();
+        fetchAndRenderClientProfileMatrixGrid();
     }
 });
