@@ -1,47 +1,48 @@
 /**
- * Isiwara Aura - Core Dashboard & Master Schedule View Module
+ * js/dashboard.js
+ * Reception Core Dashboard Activity Stream Parser Module
  */
 
-async function fetchAndRenderMasterScheduleView() {
-    const tableBody = document.getElementById('data-table-body');
-    if (!tableBody) return;
+async function compileFrontDeskActiveSchedulesLogs() {
+    const layoutInsertionPointNode = document.getElementById('data-table-body');
+    if (!layoutInsertionPointNode) return;
 
-    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-muted">Compiling master workflow tracking tables...</td></tr>`;
+    layoutInsertionPointNode.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Compiling active flow parameters...</td></tr>`;
 
-    const [bookings, financials] = await Promise.all([
+    const [bookingsCollection, financialsCollection] = await Promise.all([
         fetchAirtableTableRecords('Bookings'),
         fetchAirtableTableRecords('Financial Ledger')
     ]);
 
-    // Update operational counter summary indicators info blocks
-    if (document.getElementById('boxMtdGuests')) document.getElementById('boxMtdGuests').innerText = bookings.length;
-    if (document.getElementById('boxMtdTxCount')) document.getElementById('boxMtdTxCount').innerText = bookings.length;
+    // Force update aggregate interface indicators labels numbers items
+    if (document.getElementById('boxMtdGuests')) document.getElementById('boxMtdGuests').innerText = bookingsCollection.length;
+    if (document.getElementById('boxMtdTxCount')) document.getElementById('boxMtdTxCount').innerText = bookingsCollection.filter(b => b.fields['Status'] === 'Completed').length;
 
-    if (bookings.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-muted">Master operational logs are completely clear.</td></tr>`;
+    if (bookingsCollection.length === 0) {
+        layoutInsertionPointNode.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">No active workflows found.</td></tr>`;
         return;
     }
 
-    tableBody.innerHTML = bookings.map(booking => {
+    layoutInsertionPointNode.innerHTML = bookingsCollection.map(booking => {
         const fields = booking.fields;
         
-        // Match matching row components manually for quick reference display
-        const matchedFinance = financials.find(f => f.fields['Booking Link']?.[0] === booking.id);
-        const revenue = matchedFinance ? (parseFloat(matchedFinance.fields['Gross Collected']) || 0).toFixed(2) : '0.00';
+        // Relational map check logic lookup
+        const matchedLedgerRow = financialsCollection.find(f => f.fields['Booking Link']?.[0] === booking.id);
+        const localizedTotalRevenueStr = matchedLedgerRow ? parseFloat(matchedLedgerRow.fields['Gross Collected'] || 0).toFixed(2) : '0.00';
 
         return `
             <tr>
                 <td><strong class="font-monospace text-success">${booking.id.slice(-6).toUpperCase()}</strong></td>
-                <td>🚪 ${fields['Room Name Lookup'] || 'Treatment Area'}</td>
-                <td>🤝 ${fields['Introducer Name Lookup'] || 'Direct Entry'}</td>
-                <td class="fw-bold text-dark">රු. ${revenue}</td>
-                <td><span class="badge bg-success">${fields['Status'] || 'Completed'}</span></td>
+                <td>🚪 ${fields['Room Number'] || 'Main Arena Area'}</td>
+                <td>🤝 ${fields['Therapist Name'] || 'Specialist Staff Assigned'}</td>
+                <td class="fw-bold font-monospace text-white">රු. ${localizedTotalRevenueStr}</td>
+                <td><span class="badge bg-success text-uppercase py-1 px-2 small">${fields['Status'] || 'Completed'}</span></td>
             </tr>`;
     }).join('');
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById('data-table-body')) {
-        fetchAndRenderMasterScheduleView();
+        compileFrontDeskActiveSchedulesLogs();
     }
 });
