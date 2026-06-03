@@ -1,40 +1,41 @@
 /**
- * Isiwara Aura - Channel Partner Ledger Dashboard
+ * js/introducer.js
+ * Commission Board Partner Analytics Interface Module
  */
 
 async function fetchAndRenderIntroducerPerformanceMetrics() {
-    const listBody = document.getElementById('introducer-ledger-table-body');
-    if (!listBody) return;
+    const htmlTableBodyAnchor = document.getElementById('introducer-ledger-table-body');
+    if (!htmlTableBodyAnchor) return;
 
-    listBody.innerHTML = `<tr><td colspan="6" class="text-center py-3 text-muted">Synchronizing channel metrics...</td></tr>`;
+    htmlTableBodyAnchor.innerHTML = `<tr><td colspan="6" class="text-center py-3 text-muted">Compiling affiliate records...</td></tr>`;
     
-    const commissionRecords = await fetchAirtableTableRecords('Commissions Ledger');
+    const incomingCommissionsPayloadRecords = await fetchAirtableTableRecords('Commissions Ledger');
     
-    if (commissionRecords.length === 0) {
-        listBody.innerHTML = `<tr><td colspan="6" class="text-center py-3 text-muted">No affiliate payouts logged on system.</td></tr>`;
+    if (incomingCommissionsPayloadRecords.length === 0) {
+        htmlTableBodyAnchor.innerHTML = `<tr><td colspan="6" class="text-center py-3 text-muted">No affiliate commission profiles written.</td></tr>`;
         return;
     }
 
-    listBody.innerHTML = commissionRecords.map(record => {
-        const fields = record.fields;
+    htmlTableBodyAnchor.innerHTML = incomingCommissionsPayloadRecords.map(item => {
+        const fields = item.fields;
         
-        const lookupBookingId = fields['Booking ID Lookup'] || 'BKG-AURA';
-        const partnerNameStr = fields['Introducer Name Lookup'] || 'Active Agent';
-        const generatedVolumeBase = parseFloat(fields['Total Volume Base']) || 0;
-        const ratePct = ((parseFloat(fields['Commission Percentage']) || 0) * 100).toFixed(0);
-        const actualPayoutDue = parseFloat(fields['Payout Due Amount']) || 0;
-        const activePayoutStatus = fields['Payout Status'] || 'Pending';
+        const extractedBookingRefId = fields['Booking Link'] || 'BKG-LINK';
+        const partnerIdentityString = fields['Introducer Link Profile'] || 'Active Partner';
+        const flatTotalVolumeBaseValue = parseFloat(fields['Total Volume Base']) || 0;
+        const applicationRatePercentage = ((parseFloat(fields['Commission Percentage']) || 0) * 100).toFixed(0);
+        const computationalPayoutDue = parseFloat(fields['Payout Due Amount']) || 0;
+        const currentPayoutStatusState = fields['Payout Status'] || 'Pending';
 
-        const badgeClass = activePayoutStatus === 'Paid' ? 'bg-success' : 'bg-warning text-dark';
+        const statusBadgeThemingClass = currentPayoutStatusState === 'Paid' ? 'bg-success' : 'bg-warning text-dark';
 
         return `
             <tr>
-                <td><strong class="font-monospace">${lookupBookingId}</strong></td>
-                <td>🤝 ${partnerNameStr}</td>
-                <td class="font-monospace">රු. ${generatedVolumeBase.toFixed(2)}</td>
-                <td class="font-monospace text-muted">${ratePct}%</td>
-                <td class="font-monospace fw-bold text-primary">රු. ${actualPayoutDue.toFixed(2)}</td>
-                <td><span class="badge ${badgeClass}">${activePayoutStatus}</span></td>
+                <td><strong class="font-monospace text-white-50">${String(extractedBookingRefId).slice(0,10)}</strong></td>
+                <td>🤝 ${partnerIdentityString}</td>
+                <td class="font-monospace">රු. ${flatTotalVolumeBaseValue.toFixed(2)}</td>
+                <td class="font-monospace text-muted">${applicationRatePercentage}%</td>
+                <td class="font-monospace fw-bold text-primary">රු. ${computationalPayoutDue.toFixed(2)}</td>
+                <td><span class="badge ${statusBadgeThemingClass}">${currentPayoutStatusState}</span></td>
             </tr>`;
     }).join('');
 }
