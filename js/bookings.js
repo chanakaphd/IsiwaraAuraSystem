@@ -236,8 +236,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                     const activeTreatmentCacheRecord = cacheTreatments.find(item => item.id === targetRowTreatmentId);
                     const underlyingBasePriceMetric = activeTreatmentCacheRecord ? (parseFloat(activeTreatmentCacheRecord.fields['Price']) || 0) : 0;
 
-                    const calculatedDeductionsValue = underlyingBasePricePrice = underlyingBasePriceMetric * (specifiedRowDiscountPct / 100);
-                    const finalTransmittedBaseRevenue = underlyingBasePriceMetric - calculatedDeductionsValue;
+                    // Locate this line inside your form submission loop:
+const calculatedDeductionsValue = underlyingBasePriceMetric * (specifiedRowDiscountPct / 100);
+const finalTransmittedBaseRevenue = underlyingBasePriceMetric - calculatedDeductionsValue;
                     const ultimateRowGrossCollected = finalTransmittedBaseRevenue + specifiedRowVasFee;
 
                     // Write Step A: Write profile row to Guests table
